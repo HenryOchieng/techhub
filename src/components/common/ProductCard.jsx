@@ -1,6 +1,7 @@
 import { FiHeart, FiShoppingCart } from "react-icons/fi"
 import useCartStore from "../../store/cartStore"
 import useWishlistStore from "../../store/wishlistStore"
+import { Link } from "react-router-dom"
 
 
 function ProductCard({ product }) {
@@ -14,12 +15,13 @@ function ProductCard({ product }) {
     return (
         <div className="bg-white rounded-2xl overflow-hidden shadow hover:shadow-xl transition duration-300 group ">
             <div className="relative overflow-hidden">
-                <img
-                    src={product.image}
-                    alt={product.name}
-                    className="h-60 w-full object-cover group-hover:scale-105 transition duration-500" 
-                />
-
+                <Link to={`/product/${product.id}`}>
+                    <img
+                        src={product.image}
+                        alt={product.name}
+                        className="h-60 w-full object-cover group-hover:scale-105 transition duration-500" 
+                    />
+                </Link>
                 {product.badge && (
                     <span className="absolute top-4 left-4 bg-blue-600 text-white px-3 py-1 rounded-full text-sm">
                         {product.badge}
@@ -31,11 +33,11 @@ function ProductCard({ product }) {
                 <p className="text-sm text-slate-500">
                     {product.brand}
                 </p>
-
-                <h3 className="font-semibold text-lg mt-2">
-                    {product.name}
-                </h3>
-
+                <Link to={`/product/${product.id}`}>
+                    <h3 className="font-semibold text-lg mt-2">
+                        {product.name}
+                    </h3>
+                </Link>
                 <div className="flex items-center gap-3 mt-4">
                     <span className="text-blue-600 font-bold text-xl">
                         KSHS. {product.price.toLocaleString()}
