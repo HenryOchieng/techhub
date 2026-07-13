@@ -5,6 +5,8 @@ import useUIStore from "../../store/uiStore"
 import { FiTrash2 } from "react-icons/fi"
 
 function CartDrawer() {
+    const clearCart = useCartStore((state) => state.clearCart)
+
     const cart = useCartStore(state => state.cart)
 
     const increaseQuantity = useCartStore(
@@ -155,7 +157,21 @@ function CartDrawer() {
                             </div>
                         ))}
 
-                        <div className="mt-8 border-t pt-6">
+                        <div className="flex justify-end py-6">
+                            <button
+                                onClick={() => {
+                                    if (window.confirm("Are you sure you want to clear cart?")) {
+                                        clearCart()
+                                    }
+                                }}
+                                className="text-sm flex items-center gap-2 text-red-500 hover:text-red-700 transition"
+                            >
+                                <FiTrash2 size={16} />
+                                Clear Cart
+                            </button>
+                        </div>
+
+                        <div className="mt-2 border-t pt-6">
                             <div className="flex justify-between mb-3">
                                 <span>
                                     Items ({cart.reduce((sum, item) => sum + item.quantity, 0)})
@@ -166,7 +182,7 @@ function CartDrawer() {
                             </div>
                             <div className="flex justify-between mb-3">
                                 <span>Shipping</span>
-                                <span className="text-green=600 font-medium">
+                                <span className="text-green-600 font-medium">
                                     FREE
                                 </span>
                             </div>
