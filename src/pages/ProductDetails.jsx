@@ -1,11 +1,24 @@
+import { useState } from "react"
 import { useParams } from "react-router-dom"
 import { products } from "../data/products"
+import { FiStar } from "react-icons/fi"
+import useCartStore from "../store/cartStore"
+import { FiHeart } from "react-icons/fi"
+import useWishlistStore from "../store/wishlistStore"
 
 function ProductDetails() {
     const { id } = useParams()
 
     const product = products.find(
         (item) => item.id === Number(id)
+    )
+
+    const [quantity, setQuantity] = useState(1)
+
+    const addToCart = useCartStore((state) => state.addToCart)
+
+    const toggleWishlist = useWishlistStore(
+        (state) => state.toggleWishlist
     )
 
     if (!product) {
@@ -26,7 +39,7 @@ function ProductDetails() {
                     <img
                         src={product.image}
                         alt={product.name}
-                        className="w-full rounded=2xl border"
+                        className="w-full rounded-2xl border"
                     />
                 </div>
 
@@ -38,6 +51,16 @@ function ProductDetails() {
                     <h1 className="text-4xl font-bold mt-2">
                         {product.name}
                     </h1>
+                    <div className="flex items-center gap-2 mt-3">
+                        <div className="flex text-yellow-400">
+                            {[...Array(5)].map((_, index) => (
+                                <FiStar key={index} fill="currentColor" />
+                            ))}
+                        </div>
+                        <span className="text-slate-500">
+                            ({product.reviews} Reviews)
+                        </span>
+                    </div>
                     <div className="flex items-center gap-3 mt-5">
                         <span className="text-3xl font-bold text-blue-600">
                             KSHS. {product.price.toLocaleString()}
@@ -48,15 +71,76 @@ function ProductDetails() {
                             </span>
                         )}
                     </div>
+                    <div className="mt-5">
+                        {product.stock > 0 ? (
+                            <span className="text-green-600 font-semibold">
+                                In Stock ({product.stock} available)
+                            </span>
+                        ) : (
+                            <span className="text-red-600 font-semibold">
+                                Out of Stock
+                            </span>
+                        )}
+                    </div>
                     {product.badge && (
                         <span className="inline-block mt-4 bg-red-600 text-white px-3 py-1 rounded-full">
                             {product.badge}
                         </span>
                     )}
-                    <p className="mt-6 text-slate-600">
-                        Premium quality computer designed for
-                        performance, reliability and productivity.
+                    <p className="mt-2 text-slate-500">
+                        SKU: {product.sku}
                     </p>
+                    <p className="mt-8 leading-7 text-slate-600">
+                        {product.description}
+                    </p>
+                    <div className="mt-8">
+                        <h3 className="fot-semibold mb-3">
+                            Quantity
+                        </h3>
+                        <div className="flex item-center gap-4">
+                            <button
+                                onClick={() =>
+                                    setQuantity((prev) => Math.max(1, prev - 1))
+                                }
+                                className="w-10 h-10 rounded-lg bg-slate-200 hover:bg-blue-600 hover:text-white transition"
+                            >
+                                -
+                            </button>
+                            <span className="text-xl font-bold w-10 text-center">
+                                {quantity}
+                            </span>
+                            <button
+                                onClick={() =>
+                                    setQuantity((prev) =>
+                                    Math.min(product.stock, prev + 1))
+                                }
+                                className="w-10 h-10 rounded-lg bg-slate-200 hover:bg-blue-600 hover:text-white transition"
+                            >
+                                +
+                            </button>
+                        </div>
+                    </div>
+                    <button
+                        onClick={() => {
+                            //for (let i = 0; i < quantity; i++) {
+                                //addToCart(product, quantity)
+                            //}
+                            addToCart(product, quantity)
+                        }}
+                        className="w-full mt-8 bg-blue-600 hover:bg-blue-700 text-white py-4 rounded-xl fent-semibold transition"
+                    >
+                        Add {quantity} to Cart
+                    </button>
+                    <button className="w-full mt-4 border border-blue-600 text-blue-600 hover:bg-blue-600 hover:text-white py-4 rounded-xl font-semibold transition">
+                        Buy Now
+                    </button>
+                    <button
+                        onClick={() => toggleWishlist(product)}
+                        className="w-full mt-4 flex items-center justify-center gap-2 border border-slate-300 py-4 rounded-xl hover:bg-slate-100 transition"
+                    >
+                        <FiHeart />
+                        Add to Wishlist
+                    </button>
                 </div>
             </div>
         </div>
