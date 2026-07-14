@@ -21,6 +21,8 @@ function ProductDetails() {
         (state) => state.toggleWishlist
     )
 
+    const [selectedImage, setSelectedImage] = useState(product?.image || "")
+
     if (!product) {
         return (
             <div className="max-w-7xl mx-auto py-16 px-6">
@@ -37,10 +39,31 @@ function ProductDetails() {
                 {/* Left Side */}
                 <div>
                     <img
-                        src={product.image}
+                        key={selectedImage}
+                        src={selectedImage}
                         alt={product.name}
                         className="w-full rounded-2xl border"
+                        style={{ transition: "opacity 0.3s ease" }}
                     />
+                </div>
+                <div className="flex gap-3 mt-5">
+                    {product.images.map((image, index) => (
+                        <button
+                            key={index}
+                            onClick={() => setSelectedImage(image)}
+                            className={`border rounded-lg overflow-hidden ${
+                                selectedImage === image
+                                    ? "border-blue-600"
+                                    : "border-slate-300"
+                            }`}
+                        >
+                            <img
+                                src={image}
+                                alt={`${product.name} ${index + 1}`}
+                                className="w-20 h-20 object-cover"
+                            />
+                        </button>
+                    ))}
                 </div>
 
                 {/* Right Side */}

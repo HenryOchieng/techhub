@@ -1,7 +1,19 @@
-import eliteBook from "../assets/products/elitebook.jpg"
-import dellLatitude from "../assets/products/Dell.jpg"
-import logitechMX from "../assets/products/Logitech.jpg"
-import samsungMonitor from "../assets/products/Samsung.jpg"
+import eliteBook from "../assets/products/hp/elitebook.jpg"
+import eliteBookBack from "../assets/products/hp/elitebook-back.jpg"
+import eliteBookSide from "../assets/products/hp/elitebook-side.jpg"
+import eliteBookOpen from "../assets/products/hp/elitebook-open.jpg"
+import dellLatitude from "../assets/products/dell/Dell.jpg"
+import dellLat1 from "../assets/products/dell/Dell-open.jpg"
+import dellLat2 from "../assets/products/dell/Dell-side.jpg"
+import dellLat3 from "../assets/products/dell/Dell-back.jpg"
+import logitechMX from "../assets/products/logitech/Logitech.jpg"
+import logiTech1 from "../assets/products/logitech/Logitech-back.jpg"
+import logiTech2 from "../assets/products/logitech/Logitech-front.jpg"
+import logiTech3 from "../assets/products/logitech/Logitech-side.jpg"
+import samsungMonitor from "../assets/products/monitor/Samsung.jpg"
+import samMonitor1 from "../assets/products/monitor/Samsung-back.jpg"
+import samMonitor2 from "../assets/products/monitor/Samsung-front.jpg"
+import samMonitor3 from "../assets/products/monitor/Samsung-side.jpg"
 
 export const products = [
     {
@@ -14,7 +26,7 @@ export const products = [
         rating: 4.8,
         reviews: 36,
         image: eliteBook,
-        images: [],
+        images: [eliteBook, eliteBookBack, eliteBookSide, eliteBookOpen],
         badge: "Sale",
         stock: 12,
         sku: "HP840G8",
@@ -40,7 +52,7 @@ export const products = [
         rating: 4.5,
         reviews: 21,
         image: dellLatitude,
-        images: [],
+        images: [dellLatitude, dellLat1, dellLat2, dellLat3],
         badge: "New",
         stock: 8,
         sku: "DELL7420",
@@ -66,7 +78,7 @@ export const products = [
         rating: 4.9,
         reviews: 52,
         image: logitechMX,
-        images: [],
+        images: [logitechMX, logiTech1, logiTech2, logiTech3],
         badge: "Sale",
         stock: 30,
         sku: "LogitechMX3S",
@@ -86,6 +98,7 @@ export const products = [
         rating: 4.7,
         reviews: 19,
         image: samsungMonitor,
+        images: [samsungMonitor, samMonitor1, samMonitor2, samMonitor3],
         badge: "",
         stock: 15
     }
