@@ -24,7 +24,20 @@ export const products = [
         price: 89000,
         oldPrice: 95000,
         rating: 4.8,
-        reviews: 36,
+        reviews: [
+            {
+                id: 1,
+                user: "Steve",
+                rating: 5,
+                comment: "Excellent laptop. Fast and lightweight"
+            },
+            {
+                id: 2,
+                user: "Jane",
+                rating: 4,
+                comment: "Battery life is amazing"
+            }
+        ],
         image: eliteBook,
         images: [eliteBook, eliteBookBack, eliteBookSide, eliteBookOpen],
         badge: "Sale",
@@ -37,7 +50,7 @@ export const products = [
             storage: "512GB SSD",
             graphics: "Intel Iris Xe",
             display: '14" FHD IPS',
-            operatingSystem: "Windows 11 Pro",
+            os: "Windows 11 Pro",
             warranty: "1 Year"
         }
     },
@@ -50,20 +63,33 @@ export const products = [
         price: 98000,
         oldPrice: null,
         rating: 4.5,
-        reviews: 21,
+        reviews: [
+            {
+                id: 1,
+                user: "Steve",
+                rating: 5,
+                comment: "Excellent laptop. Fast and lightweight"
+            },
+            {
+                id: 2,
+                user: "Jane",
+                rating: 4,
+                comment: "Battery life is amazing"
+            }
+        ],
         image: dellLatitude,
         images: [dellLatitude, dellLat1, dellLat2, dellLat3],
         badge: "New",
         stock: 8,
         sku: "DELL7420",
         description: "A premium 14-inch business laptop designed for performance, portability, and productivity.",
-        specification: {
+        specifications: {
             processor: "11th Gen Intel® Core™ i5 or Core™ i7",
             ram: "32GB DDR4",
             storage: "1TB NVMe SSD",
             graphics: "Intel® Iris Xe Graphics",
             display: "14-inch Full HD (1920 × 1080) Anti-Glare",
-            operatingSystem: "Windows 11 Pro",
+            os: "Windows 11 Pro",
             warranty: "1 Year"
         }
     },
@@ -76,7 +102,20 @@ export const products = [
         price: 14500,
         oldPrice: 17000,
         rating: 4.9,
-        reviews: 52,
+        reviews: [
+            {
+                id: 1,
+                user: "Steve",
+                rating: 5,
+                comment: "Excellent laptop. Fast and lightweight"
+            },
+            {
+                id: 2,
+                user: "Jane",
+                rating: 4,
+                comment: "Battery life is amazing"
+            }
+        ],
         image: logitechMX,
         images: [logitechMX, logiTech1, logiTech2, logiTech3],
         badge: "Sale",
@@ -96,7 +135,20 @@ export const products = [
         price: 32000,
         oldPrice: null,
         rating: 4.7,
-        reviews: 19,
+        reviews: [
+            {
+                id: 1,
+                user: "Steve",
+                rating: 5,
+                comment: "Excellent laptop. Fast and lightweight"
+            },
+            {
+                id: 2,
+                user: "Jane",
+                rating: 4,
+                comment: "Battery life is amazing"
+            }
+        ],
         image: samsungMonitor,
         images: [samsungMonitor, samMonitor1, samMonitor2, samMonitor3],
         badge: "",

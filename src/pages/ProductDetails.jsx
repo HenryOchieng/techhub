@@ -23,6 +23,8 @@ function ProductDetails() {
 
     const [selectedImage, setSelectedImage] = useState(product?.image || "")
 
+    const [activeTab, setActiveTab] = useState("description")
+
     if (!product) {
         return (
             <div className="max-w-7xl mx-auto py-16 px-6">
@@ -81,7 +83,7 @@ function ProductDetails() {
                             ))}
                         </div>
                         <span className="text-slate-500">
-                            ({product.reviews} Reviews)
+                            ({product.reviews.length} Reviews)
                         </span>
                     </div>
                     <div className="flex items-center gap-3 mt-5">
@@ -165,6 +167,103 @@ function ProductDetails() {
                         Add to Wishlist
                     </button>
                 </div>
+            </div>
+            <div className="mt-16">
+                <div className="flex border-b">
+                    <button
+                        onClick={() => setActiveTab("description")}
+                        className={`px-6 py-4 font-semibold ${
+                            activeTab === "description"
+                                ? "border-b-2 border-blue-600 text-blue-600"
+                                : "text-slate-500"
+                        }`}
+                    >
+                        Description
+                    </button>
+                    <button
+                        onClick={() => setActiveTab("specifications")}
+                        className={`px-6 py-4 font-semibold ${
+                            activeTab === "specifications"
+                                ? "border-b-2 border-blue-600 text-blue-600"
+                                :  "text-slate-500"
+                        }`}
+                    >
+                        Specifications
+                    </button>
+                    <button
+                        onClick={() => setActiveTab("reviews")}
+                        className={`px-6 py-4 font-semibold ${
+                            activeTab === "reviews"
+                                ? "border-b-2 border-blue-600 text-blue-600"
+                                : "text-slate-500"
+                        }`}
+                    >
+                        Reviews     
+                    </button>
+                </div>
+                {activeTab === "description" && (
+                    <div className="py-8">
+                        <p className="leading-8 text-slate-600">
+                            {product.description}
+                        </p>
+                    </div>
+                )}
+                {activeTab === "specifications" && (
+                    <div className="py-8">
+                        <table className="w-full">
+                            <tbody>
+                                {Object.entries(product.specifications).map(
+                                    ([key, value]) => (
+                                        <tr
+                                            key={key}
+                                            className="border-b"
+                                        >
+                                            <td className="py-4 font-semibold">
+                                                {key}
+                                            </td>
+                                            <td className="py-4 text-slate-600">
+                                                {value}
+                                            </td>
+                                        </tr>
+                                    )
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
+                )}
+                {activeTab === "reviews" && (
+                    <div className="py-8 space-y-6">
+                        {product.reviews.map((review) => (
+                            <div
+                                key={review.id}
+                                className="border rounded-xl p-5 shadow-sm hover:shadow-md transition"
+                            >
+                                <h3 className="font-semibold txt-lg">
+                                    {review.user}
+                                </h3>
+                                <p className="text-yellow-500">
+                                    {(review.rating)}
+                                </p>
+                                <div className="flex items-center gap-1 mt-2">
+                                    {[...Array(5)].map((_, index) => (
+                                        <FiStar
+                                            key={index}
+                                            className={`${
+                                                index < review.rating
+                                                    ? "text-yellow-400 fill-yellow-400"
+                                                    : "text-slate-300"
+                                            }`}
+                                            size={18}
+                                        />
+                                    ))}
+                                </div>
+                                <p className="mt-3 text-slate-600 leading-7">
+                                    {review.comment}
+                                </p>
+                            </div>
+                        ))}
+                    </div>
+                )}
             </div>
         </div>
     )
