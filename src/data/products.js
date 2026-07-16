@@ -123,7 +123,13 @@ export const products = [
         sku: "LogitechMX3S",
         description: "A premium ergonomic wireless mouse with ultra-fast MagSpeed scrolling, quiet clicks, an 8,000 DPI sensor, and multi-device connectivity.",
         specifications: {
-
+            sensor: "Darkfield high-precision sensor",
+            wirelessRange: "Up to 10 meters",
+            battery: "Built-in 500 mAh rechargeable Li-Po battery",
+            batteryLife: "Up to 70 days on a full charge",
+            chargingPort: "USB-C",
+            weight: "141g",
+            dimensions: "124.9 x 84.3 x 51 mm"
         }
     },
 
@@ -149,6 +155,16 @@ export const products = [
                 comment: "Battery life is amazing"
             }
         ],
+        description: "The Samsung 27-inch IPS Monitor features a 27-inch Full HD (1920 × 1080) IPS display that provides vibrant colors and consistent image quality from virtually any viewing angle (up to 178° horizontally and vertically).",
+        specifications: {
+            screenSize: "27 inches",
+            panelType: "IPS(In-Plane Switching)",
+            resolution: "Full HD (1920 x 1080)",
+            aspectRatio: "16:9",
+            refreshRate: "Up to 75 Hz",
+            ports: "HDMI, VGA (model-dependent)",
+            adaptiveSync: "AMD FreeSync (selected models)"
+        },
         image: samsungMonitor,
         images: [samsungMonitor, samMonitor1, samMonitor2, samMonitor3],
         badge: "",

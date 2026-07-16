@@ -2,6 +2,7 @@ import { FiHeart, FiShoppingCart } from "react-icons/fi"
 import useCartStore from "../../store/cartStore"
 import useWishlistStore from "../../store/wishlistStore"
 import { Link } from "react-router-dom"
+import Rating from "./Rating"
 
 
 function ProductCard({ product }) {
@@ -38,6 +39,11 @@ function ProductCard({ product }) {
                         {product.name}
                     </h3>
                 </Link>
+                <Rating
+                    rating={product.rating}
+                    reviews={product.reviews.length}
+                    size={14}
+                />
                 <div className="flex items-center gap-3 mt-4">
                     <span className="text-blue-600 font-bold text-xl">
                         KSHS. {product.price.toLocaleString()}

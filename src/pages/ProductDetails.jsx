@@ -1,10 +1,11 @@
 import { useState } from "react"
 import { useParams } from "react-router-dom"
 import { products } from "../data/products"
-import { FiStar } from "react-icons/fi"
 import useCartStore from "../store/cartStore"
 import { FiHeart } from "react-icons/fi"
 import useWishlistStore from "../store/wishlistStore"
+import Rating from  "../components/product/Rating"
+import ProductCard from "../components/product/ProductCard"
 
 function ProductDetails() {
     const { id } = useParams()
@@ -12,6 +13,25 @@ function ProductDetails() {
     const product = products.find(
         (item) => item.id === Number(id)
     )
+
+    let relatedProducts = products.filter(
+        (item) =>
+            item.category === product.category &&
+            item.id !== product.id
+    )
+
+    if (relatedProducts.length < 4) {
+        const moreProducts = products.filter(
+            (item) =>
+                item.category !== product.category &&
+                item.id !== product.id
+        )
+
+        relatedProducts = [
+            ...relatedProducts,
+            ...moreProducts
+        ].slice(0, 4)
+    }
 
     const [quantity, setQuantity] = useState(1)
 
@@ -77,14 +97,10 @@ function ProductDetails() {
                         {product.name}
                     </h1>
                     <div className="flex items-center gap-2 mt-3">
-                        <div className="flex text-yellow-400">
-                            {[...Array(5)].map((_, index) => (
-                                <FiStar key={index} fill="currentColor" />
-                            ))}
-                        </div>
-                        <span className="text-slate-500">
-                            ({product.reviews.length} Reviews)
-                        </span>
+                        <Rating
+                            rating={product.rating}
+                            reviews={product.reviews.length}
+                        />
                     </div>
                     <div className="flex items-center gap-3 mt-5">
                         <span className="text-3xl font-bold text-blue-600">
@@ -245,17 +261,10 @@ function ProductDetails() {
                                     {(review.rating)}
                                 </p>
                                 <div className="flex items-center gap-1 mt-2">
-                                    {[...Array(5)].map((_, index) => (
-                                        <FiStar
-                                            key={index}
-                                            className={`${
-                                                index < review.rating
-                                                    ? "text-yellow-400 fill-yellow-400"
-                                                    : "text-slate-300"
-                                            }`}
-                                            size={18}
-                                        />
-                                    ))}
+                                    <Rating
+                                        rating={review.rating}
+                                        size={16}
+                                    />
                                 </div>
                                 <p className="mt-3 text-slate-600 leading-7">
                                     {review.comment}
@@ -265,6 +274,19 @@ function ProductDetails() {
                     </div>
                 )}
             </div>
+            <section className="mt-5 bg-slate-50 rounded-3xl px-8 py-6">
+                <h2 className="text-mxl font-bold mb-8">
+                    You May Also Like
+                </h2>
+                <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-4">
+                    {relatedProducts.map((item) => (
+                        <ProductCard
+                            key={item.id}
+                            product={item}
+                        />
+                    ))}
+                </div>
+            </section>
         </div>
     )
 }

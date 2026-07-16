@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query"
 import { getFeaturedProducts } from "../../api/products"
-import ProductCard from "../common/ProductCard"
+import ProductCard from "../product/ProductCard"
 
 function FeaturedProducts() {
     const { data = [], isLoading } = useQuery({
