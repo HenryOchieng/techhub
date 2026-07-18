@@ -45,7 +45,7 @@ export const categories = [
 
     {
         id: 6,
-        name: "Accessories & Peripherals",
+        name: "Accessories",
         icon: FiHeadphones,
         totalProducts: 72
     }

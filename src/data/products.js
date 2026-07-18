@@ -98,7 +98,7 @@ export const products = [
         id: 3,
         name: "Logitech MX Master 3S",
         brand: "Logitech",
-        category: "Accessories & Peripherals",
+        category: "Accessories",
         price: 14500,
         oldPrice: 17000,
         rating: 4.9,
