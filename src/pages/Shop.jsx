@@ -3,20 +3,13 @@ import ProductCard from "../components/product/ProductCard"
 import { products } from "../data/products"
 
 function Shop() {
-    const [selectedBrands, setSelectedBrands] = useState([])
-
     const [search, setSearch] = useState("")
 
     const [selectedCategory, setSelelctedCategory] = useState("All")
 
-    const [sortBy, setSortBy] = useState("Newest")
+    const [selectedBrands, setSelectedBrands] = useState([])
 
-    const toggleBrand = (brand) => {
-        setSelectedBrands((prev) =>
-            prev.includes(brand)
-                ? prev.filter((b) => b !== brand)
-                : [...prev, brand])
-    }
+    const [sortBy, setSortBy] = useState("Newest")
 
     const filteredProducts = products.filter((product) => {
         const matchesSearch =
@@ -50,7 +43,16 @@ function Shop() {
 
     const brands = [
         ...new Set(products.map(product => product.brand))
-    ]
+    ].sort();
+
+    const toggleBrand = (brand) => {
+        setSelectedBrands((prev) => {
+            if (prev.includes(brand)) {
+                return prev.filter((b) => b !== brand)
+            }
+            return [...prev, brand]
+        })
+    }
 
     return (
         <div className="max-w-7xl mx-auto px-6 py-10">
@@ -129,15 +131,18 @@ function Shop() {
                                 {brands.map((brand) => (
                                     <label
                                         key={brand}
-                                        className="flex items-center gap-3 cursor-pointer"
+                                        className="flex items-center gap-3 cursor-pointer hover:text-blue-600 transition"
                                     >
                                         <input
                                             type="checkbox"
                                             checked={selectedBrands.includes(brand)}
                                             onChange={() => toggleBrand(brand)}
-                                            className="accent-blue-600"
+                                            className="w-4 h-4 accent-blue-600"
                                         />
                                         <span>{brand}</span>
+                                        <span className="text-slate-400 text-sm">
+                                            ({products.filter(p => p.brand === brand).length})
+                                        </span>
                                     </label>
                                 ))}
                             </div>
