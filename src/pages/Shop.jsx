@@ -3,11 +3,20 @@ import ProductCard from "../components/product/ProductCard"
 import { products } from "../data/products"
 
 function Shop() {
+    const [selectedBrands, setSelectedBrands] = useState([])
+
     const [search, setSearch] = useState("")
 
     const [selectedCategory, setSelelctedCategory] = useState("All")
 
     const [sortBy, setSortBy] = useState("Newest")
+
+    const toggleBrand = (brand) => {
+        setSelectedBrands((prev) =>
+            prev.includes(brand)
+                ? prev.filter((b) => b !== brand)
+                : [...prev, brand])
+    }
 
     const filteredProducts = products.filter((product) => {
         const matchesSearch =
@@ -19,7 +28,11 @@ function Shop() {
             selectedCategory === "All" || 
             product.category === selectedCategory
 
-        return matchesSearch && matchesCategory
+        const matchesBrand = 
+            selectedBrands.length === 0 || 
+            selectedBrands.includes(product.brand)
+
+        return matchesSearch && matchesCategory && matchesBrand
     })
     .sort((a, b) => {
         switch (sortBy) {
@@ -35,8 +48,9 @@ function Shop() {
         ...new Set(products.map(product => product.category))
     ]
 
-
-    //console.log("Sort:", sortBy)
+    const brands = [
+        ...new Set(products.map(product => product.brand))
+    ]
 
     return (
         <div className="max-w-7xl mx-auto px-6 py-10">
@@ -108,10 +122,32 @@ function Shop() {
                             </div>
                         </div>
                         <div className="mt-8">
+                            <h3 className="font-semibold mb-4">
+                                Brands
+                            </h3>
+                            <div className="space-y-3">
+                                {brands.map((brand) => (
+                                    <label
+                                        key={brand}
+                                        className="flex items-center gap-3 cursor-pointer"
+                                    >
+                                        <input
+                                            type="checkbox"
+                                            checked={selectedBrands.includes(brand)}
+                                            onChange={() => toggleBrand(brand)}
+                                            className="accent-blue-600"
+                                        />
+                                        <span>{brand}</span>
+                                    </label>
+                                ))}
+                            </div>
+                        </div>
+                        <div className="mt-8">
                             <button
                                 onClick={() => {
                                     setSearch("")
                                     setSelelctedCategory("All")
+                                    setSelectedBrands([])
                                 }}
                                 className="w-full border border-red-500 text-red-500 py-3 rounded-xl hover:bg-red-500 hover:text-white transition"
                             >
