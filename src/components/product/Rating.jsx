@@ -3,6 +3,7 @@ import { FiStar } from "react-icons/fi"
 function Rating({
     rating,
     reviews,
+    showReviews,
     size = 18
 }) {
     return (
@@ -24,6 +25,9 @@ function Rating({
                 <span className="text-slate-500 text-sm">
                     ({reviews} Reviews)
                 </span>
+            )}
+            {showReviews && (
+                <span>({reviews} Reviews)</span>
             )}
         </div>
     )

@@ -1,15 +1,25 @@
 import { useState } from "react"
+import { FiX } from "react-icons/fi"
 import ProductCard from "../components/product/ProductCard"
 import { products } from "../data/products"
+import Rating from "../components/product/Rating"
 
 function Shop() {
     const [search, setSearch] = useState("")
 
-    const [selectedCategory, setSelelctedCategory] = useState("All")
+    const [selectedCategory, setSelectedCategory] = useState("All")
 
     const [selectedBrands, setSelectedBrands] = useState([])
 
     const [sortBy, setSortBy] = useState("Newest")
+
+    const highestPrice = Math.max(
+        ...products.map(product => product.price)
+    )
+
+    const [maxPrice, setMaxPrice] = useState(() => highestPrice)
+
+    const [minimumRating, setMinimumRating] = useState(0)
 
     const filteredProducts = products.filter((product) => {
         const matchesSearch =
@@ -25,7 +35,11 @@ function Shop() {
             selectedBrands.length === 0 || 
             selectedBrands.includes(product.brand)
 
-        return matchesSearch && matchesCategory && matchesBrand
+        const matchesPrice = product.price <= maxPrice
+
+        const matchesRating = product.rating >= minimumRating
+
+        return matchesSearch && matchesCategory && matchesBrand && matchesPrice && matchesRating
     })
     .sort((a, b) => {
         switch (sortBy) {
@@ -79,7 +93,7 @@ function Shop() {
                 </select>
             </div>
             <hr className="my-6 border-slate-200"/>
-            <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-8 mt-8">
+            <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-12 mt-8">
 
                 {/* Sidebar */}
                 <aside>
@@ -109,7 +123,7 @@ function Shop() {
                                     <button
                                         key={category}
                                         onClick={() => {
-                                            setSelelctedCategory(category)
+                                            setSelectedCategory(category)
                                             setSearch("")
                                         }}
                                         className={`w-full text-left px-4 py-3 rounded-xl transition ${
@@ -148,11 +162,74 @@ function Shop() {
                             </div>
                         </div>
                         <div className="mt-8">
+                            <h3 className="font-semibold mb-4">
+                                Price
+                            </h3>
+                            <input
+                                type="range"
+                                min="0"
+                                max={highestPrice}
+                                step="5000"
+                                value={maxPrice}
+                                onChange={(e) => setMaxPrice(Number(e.target.value))}
+                                className="w-full accent-blue-600"
+                            />
+                            <div className="flex justify-between mt-3 text-sm text-slate-600">
+                                <span>Kshs. 0</span>
+                                <span>Kshs. {maxPrice.toLocaleString()}</span>
+                            </div>
+                            <div className="mt-4 bg-slate-100 rounded-xl p-3 text-center">
+                                    <p className="text-sm text-slate-500">
+                                        Showing products up to
+                                    </p>
+                                    <p className="text-xl font-bold text-blue-600">
+                                        Kshs. {maxPrice.toLocaleString()}
+                                    </p>
+                            </div>
+                        </div>
+                        <div className="mt-8">
+                            <h3 className="font-semibold mb-4">
+                                Rating
+                            </h3>
+                        </div>
+                        <div className="space-y-3">
+                            {[4, 3, 2, 1].map((rating) => (
+                                <button
+                                    key={rating}
+                                    onClick={() => setMinimumRating(rating)}
+                                    className={`flex items-center justify-between w-full px-4 py-3 rounded-xl transition ${
+                                        minimumRating === rating
+                                            ? "bg-blue-600 text-white"
+                                            : "hover:bg-slate-100"
+                                    }`}
+                                >
+                                    <Rating
+                                        rating={rating}
+                                        reviews={0}
+                                        size={16}
+                                    />
+                                    <span>& Up</span>
+                                </button>
+                            ))}
+                            <button
+                                onClick={() => setMinimumRating(0)}
+                                className={`w-full px-4 py-3 rounded-xl transition ${
+                                    minimumRating === 0
+                                        ? "bg-blue-600 text-white"
+                                        : "hover:bg-slate-100"
+                                }`}
+                            >
+                                All Ratings
+                            </button>
+                        </div>
+                        <div className="mt-8">
                             <button
                                 onClick={() => {
                                     setSearch("")
-                                    setSelelctedCategory("All")
+                                    setSelectedCategory("All")
                                     setSelectedBrands([])
+                                    setMaxPrice(highestPrice)
+                                    setMinimumRating(0)
                                 }}
                                 className="w-full border border-red-500 text-red-500 py-3 rounded-xl hover:bg-red-500 hover:text-white transition"
                             >
@@ -164,6 +241,67 @@ function Shop() {
 
                 {/* Products */}
                 <section>
+                    {(
+                        selectedCategory !== "All" ||
+                        selectedBrands.length > 0 ||
+                        minimumRating > 0 ||
+                        maxPrice < highestPrice
+                    ) && (
+                        <div className="flex flex-wrap gap-3 mb-6">
+                            <h3 className="text-sm font-semibold text-slate-500 mb-3">
+                                Active Filters
+                            </h3>
+                            {selectedCategory !== "All" & (
+                                <button
+                                    onClick={() => setSelectedCategory("All")}
+                                    className="px-3 py-1.5 bg-blue-100 text-blue-700 rounded-full text-sm hover:bg-blue-200 transition"
+                                >
+                                    <span className="flex items-center gap-2">
+                                        {selectedCategory}
+                                        <FiX size={14}/>
+                                    </span>
+                                </button>
+                            )}
+
+                            {selectedBrands.map((brand) => (
+                                <button
+                                    key={brand}
+                                    onClick={() => toggleBrand(brand)}
+                                    className="px-3 py-1.5 bg-blue-100 text-blue-700 rounded-full text-sm hover:bg-blue-200 transition"
+                                >
+                                    <span className="flex items-center gap-2">
+                                        {brand}
+                                        <FiX size={14} />
+                                    </span>
+                                </button>
+                            ))}
+
+                            {minimumRating > 0 && (
+                                <button
+                                    onClick={() => setMinimumRating(0)}
+                                    className="px-3 py-1.5 bg-blue-100 rounded-full text-sm hover:bg-blue-200 transition"
+                                >
+                                    <Rating
+                                        rating={minimumRating}
+                                        reviews={0}
+                                        showReviews={false}
+                                    />
+                                    <span>& Up</span>
+                                    <FiX size={14} />
+                                </button>
+                            )}
+
+                            {maxPrice < highestPrice && (
+                                <button
+                                    onClick={() => setMaxPrice(highestPrice)}
+                                    className="px-3 py-1.5 bg-blue-100 rounded-full text-sm  hover:bg-blue-200 transition"
+                                >
+                                    Under Kshs.. {maxPrice.toLocaleString()}
+                                </button>
+                            )}
+                        </div>
+                    )}
+
                     {filteredProducts.length > 0 ? (
                         <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-8">
                             {filteredProducts.map(product => (
