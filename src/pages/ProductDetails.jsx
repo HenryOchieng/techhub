@@ -163,9 +163,6 @@ function ProductDetails() {
                     </div>
                     <button
                         onClick={() => {
-                            //for (let i = 0; i < quantity; i++) {
-                                //addToCart(product, quantity)
-                            //}
                             addToCart(product, quantity)
                         }}
                         className="w-full mt-8 bg-blue-600 hover:bg-blue-700 text-white py-4 rounded-xl fent-semibold transition"

@@ -205,7 +205,7 @@ function Shop() {
                                 >
                                     <Rating
                                         rating={rating}
-                                        reviews={0}
+                                        showReviews={false}
                                         size={16}
                                     />
                                     <span>& Up</span>
@@ -283,7 +283,6 @@ function Shop() {
                                 >
                                     <Rating
                                         rating={minimumRating}
-                                        reviews={0}
                                         showReviews={false}
                                     />
                                     <span>& Up</span>
