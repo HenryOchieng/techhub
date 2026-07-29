@@ -11,6 +11,7 @@ import Contact from "./pages/Contact"
 import CartDrawer from "./components/cart/CartDrawer"
 import useUIStore from "./store/uiStore";
 import ProductDetails from "./pages/ProductDetails"
+import Checkout from "./pages/Checkout"
 
 function App() {
   const cartOpen = useUIStore(state => state.cartOpen)
@@ -26,6 +27,7 @@ function App() {
         <Route path="/about" element={<About />} />
         <Route path="/contact" element={<Contact />} />
         <Route path="product/:id" element={<ProductDetails />} />
+        <Route path="/checkout" element={<Checkout />} />
       </Routes>
       {cartOpen && <CartDrawer />}
     </>

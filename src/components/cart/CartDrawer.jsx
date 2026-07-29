@@ -3,6 +3,7 @@ import { motion } from "framer-motion"
 import { FiX } from "react-icons/fi"
 import useUIStore from "../../store/uiStore"
 import { FiTrash2 } from "react-icons/fi"
+import { Link } from "react-router-dom"
 
 function CartDrawer() {
     const clearCart = useCartStore((state) => state.clearCart)
@@ -197,9 +198,11 @@ function CartDrawer() {
                                     KSHS. {subtotal.toLocaleString()}
                                 </span>
                             </div>
-                            <button className="w-full mt-6 bg-blue-600 hover:bg-blue-700 text-white py-4 rounded-xl transition">
-                                Proceed to Checkout
-                            </button>
+                            <Link to="/checkout">
+                                <button className="w-full mt-6 bg-blue-600 hover:bg-blue-700 text-white py-4 rounded-xl transition">
+                                    Proceed to Checkout
+                                </button>        
+                            </Link>
                             <button
                                 onClick={closeCart}
                                 className="w-full mt-4 border border-blue-600 text-blue-600 hover:bg-blue-600 hover:text-white py-4 rounded-xl transition"
