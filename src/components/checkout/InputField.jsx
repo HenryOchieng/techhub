@@ -5,8 +5,6 @@ function InputField({
     register,
     error,
     placeholder,
-    value,
-    onChange
 }) {
     return (
         <div>
