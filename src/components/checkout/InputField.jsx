@@ -2,6 +2,8 @@ function InputField({
     label,
     name,
     type = "text",
+    register,
+    error,
     placeholder,
     value,
     onChange
@@ -14,12 +16,20 @@ function InputField({
 
             <input
                 type={type}
-                name={name}
                 placeholder={placeholder}
-                value={value}
-                onChange={onChange}
-                className="w-full border rounded-xl px-4 py-3 focus:outline-none focus:ring-blue-600"
+                {...register(name)}
+                className={`w-full rounded-xl px-4 py-3 border transition ${
+                    error
+                        ? "border-red-500 focus:ring-red-500"
+                        : "border-gray-300 focus:ring-blue-500"
+                }
+                focus:outline-none focus:ring-2`}
             />
+            {error && (
+                <p className="text-red-500 text-sm mt-2">
+                    {error.message}
+                </p>
+            )}
         </div>
     )
 }
