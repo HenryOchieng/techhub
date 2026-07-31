@@ -5,6 +5,7 @@ import { useNavigate } from "react-router-dom"
 import { checkoutSchema } from "../validation/checkoutSchema"
 import InputField from "../components/checkout/InputField"
 import useCartStore from "../store/cartStore"
+import useCheckoutStore from "../store/checkoutStore"
 
 function Checkout() {
     const cart = useCartStore(state => state.cart)
@@ -20,6 +21,10 @@ function Checkout() {
 
     const total = subtotal + shipping + tax
 
+    const shippingDetails = useCheckoutStore(
+        (state) => state.shippingDetails
+    )
+
     const {
         register,
         handleSubmit,
@@ -28,28 +33,24 @@ function Checkout() {
         resolver: zodResolver(checkoutSchema),
         shouldFocusError: true,
         mode: "onChange",
-        defaultValues: {
-            firstName: "",
-            lastName: "",
-            email: "",
-            phone: "",
-            county: "",
-            town: "",
-            address: "",
-            notes: ""
-        }
+        defaultValues: shippingDetails
     })
 
     const navigate = useNavigate()
+
+    const saveShipping = useCheckoutStore(
+        state => state.saveShipping
+    )
 
     const onSubmit = async (data) => {
 
         await new Promise(resolve =>
             setTimeout(resolve, 1500)
         )
-        toast.success("Shipping details saved")
 
-        console.log(data)
+        saveShipping(data)
+        
+        toast.success("Shipping details saved")
         
         navigate("/payment")
     }
