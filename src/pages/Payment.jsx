@@ -1,3 +1,4 @@
+import { useState } from "react"
 import useCheckoutStore from "../store/checkoutStore"
 import useCartStore from "../store/cartStore"
 import PaymentCard from "../components/checkout/PaymentCard"
@@ -34,6 +35,42 @@ function Payment() {
 
     const total = subtotal + shipping
 
+    const [mpesaNumber, setMpesaNumber] = useState("")
+    const [cardNumber, setCardNumber] = useState("")
+    const [expiryDate, setExpiryDate] = useState("")
+    const [cvv, setCvv] = useState("")
+
+    const handlePlaceHolder = () => {
+        switch (paymentMethod) {
+            case "M-Pesa":
+                initiateSTKPush();
+                break;
+
+            case "Credit/Debit Card":
+                redirectToCardPayment();
+                break;
+
+            case "Cash On Delivery":
+                createCashOrder();
+                break;
+
+            default:
+                alert("Please select a payment method")
+        }
+    }
+
+    const initiateSTKPush = () => {
+        console.log("Initiating STK Push...")
+    }
+
+    const redirectToCardPayment = () => {
+        console.log("Redirecting to card payment gateway...")
+    }
+
+    const createCashOrder = () => {
+        console.log("Creating cash on delivery order...")
+    }
+
     return (
         <div className="max-w-7xl mx-auto px-6 py-12">
             <h1 className="text-4xl font-bold mb-10">
@@ -52,6 +89,36 @@ function Payment() {
                         onSelect={setPaymentMethod}
                         recommended
                     />
+                    {paymentMethod === "M-Pesa" && (
+                        <div className="mt-6 border rounded-2xl p-6 bg-green-50">
+                            <h3 className="text-xl font-semibold mb-3 text-green-700">
+                                Pay via M-Pesa
+                            </h3>
+                            <p className="text-gray-600 mb-4">
+                                Enter your M-Pesa number. You will receive an STK Push
+                                notification on your phone to complete the payment.
+                            </p>
+                            <label className="block mb-2 font-medium">
+                                M-Pesa Phone Number
+                            </label>
+                            <input
+                                type="tel"
+                                placeholder="07xxxxxxxx"
+                                value={mpesaNumber}
+                                onChange={(e) => setMpesaNumber(e.target.value)}
+                                className="w-full border rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-green-500"
+                            />
+                            <button
+                                disabled={!mpesaNumber}
+                                className={`mt-5 w-full py-3 rounded-xl font-semibold text-white transition ${
+                                    mpesaNumber ? "bg-green-600 hover:bg-green-700" : "bg-gray-400 cursor-not-allowed"
+                                }`}
+                            >
+                                Send STK Push
+                            </button>
+                        </div>
+                    )}
+
                     <PaymentCard
                         title="Credit/Debit Card"
                         description="Pay with Visa, Mastercard"
@@ -60,6 +127,54 @@ function Payment() {
                         selected={paymentMethod === "Credit/Debit Card"}
                         onSelect={setPaymentMethod}
                     />
+                    {paymentMethod === "Credit/Debit Card" && (
+                        <div className="mt-6 border rounded-2xl p-6 bg-blue-50">
+                            <h3 className="text-xl font-semibold mb-4 text-blue-700">
+                                Card Payment
+                            </h3>
+                            <div className="space-7-4">
+                                <div>
+                                    <label className="block mb-2 font-medium">
+                                        Card Number
+                                    </label>
+                                    <input
+                                        type="text"
+                                        placeholder="1234 5678 9012 3456"
+                                        value={cardNumber}
+                                        onChange={(e) => setCardNumber(e.target.value)}
+                                        className="w-full border rounded-xl px-4 py-3"
+                                    />
+                                </div>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block mb-2 font-medium">
+                                            Expriry Date
+                                        </label>
+                                        <input
+                                            type="text"
+                                            placeholder="MM/YY"
+                                            value={expiryDate}
+                                            onChange={(e) => setExpiryDate(e.target.value)}
+                                            className="w-full border rounded-xl px-4 py-3" 
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block mb-2 font-medium">
+                                            CVV
+                                        </label>
+                                        <input
+                                            type="password"
+                                            placeholder="123"
+                                            value={cvv}
+                                            onChange={(e) => setCvv(e.target.value)}
+                                            className="w-full border rounded-xl px-4 py-3"
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
                     <PaymentCard
                         title="Cash on Delivery"
                         description="Pay when your order arrives"
@@ -68,6 +183,17 @@ function Payment() {
                         selected={paymentMethod === "Cash On Delivery"}
                         onSelect={setPaymentMethod}
                     />
+                    {paymentMethod === "Cash On Delivery" && (
+                        <div className="mt-6 border rounded-2xl p-6 bg-yellow-50">
+                            <h3 className="text-xl font-semibold text-yellow-700 mb-3">
+                                Cash on Delivery
+                            </h3>
+                            <p className="text-gray-700">
+                                You will pay in cash when your oder is delivered.
+                            </p>
+                        </div>
+                    )}
+
                     <div className="bg-green-50 border border-green-200 rounded-2xl p-5">
                         <div className="flex gap-4">
                             <FiShield className="text-green-600 mt-1" size={28}/>
@@ -83,14 +209,18 @@ function Payment() {
                         </div>
                     </div>
                     <button
-                        disabled={!paymentMethod}
+                        onClick={handlePlaceHolder}
+                        //disabled={!paymentMethod}
                         className={`w-full py-4 rounded-xl font-semibold transition ${
                             paymentMethod
                                 ? "bg-blue-600 hover:bg-blue-700 text-white"
                                 : "bg-slate-300 cursor-not-allowed"
                         }`}
                     >
-                        Place Order
+                        {paymentMethod === "M-Pesa" && "Pay with M-Pesa"}
+                        {paymentMethod === "Credit/Debit Card" && "Pay with Card"}
+                        {paymentMethod === "Cash On Delivery" && "Place Order"}
+                        {!paymentMethod && "Select Payment Method"}
                     </button>
                 </div>
 
@@ -106,8 +236,10 @@ function Payment() {
                         <p>{shippingDetails.phone}</p>
                         <p>{shippingDetails.email}</p>
                         <p className="mt-4">{shippingDetails.address}</p>
-                        <p>{shippingDetails.town}</p>
-                        <p>{shippingDetails.county}</p>
+                        <p>
+                            {shippingDetails.town}, {shippingDetails.county}
+                        </p>
+
                     </div>
                     <hr className="my-6"/>
                     <div className="space-y-3">
