@@ -1,4 +1,6 @@
 import { useState } from "react"
+import { useNavigate } from "react-router-dom"
+import useOrderStore from "../store/orderStore"
 import useCheckoutStore from "../store/checkoutStore"
 import useCartStore from "../store/cartStore"
 import PaymentCard from "../components/checkout/PaymentCard"
@@ -69,6 +71,47 @@ function Payment() {
 
     const createCashOrder = () => {
         console.log("Creating cash on delivery order...")
+    }
+
+    const navigate = useNavigate()
+
+    const createOrder = useOrderStore(
+        (state) => state.createOrder
+    )
+
+    const [isProcessing, setIsProcessing] = useState(false)
+
+    const handlePlaceOrder = async () => {
+        if (!paymentMethod) return 
+
+        setIsProcessing(true)
+
+        await new Promise((resolve) => 
+            setTimeout(resolve, 1500)
+        )
+
+        const orderNumber = 
+            `ORD-${new Date().getFullYear()}-${Date.now()
+                .toString()
+                .slice(-6)
+            }`
+
+        const order = {
+            orderNumber,
+            items: cart,
+            shippingDetails,
+            paymentMethod,
+            subtotal,
+            shipping,
+            total,
+            status: "Pending",
+            orderDate: new Date().toISOString()
+        }
+
+        createOrder(order)
+
+        setIsProcessing(false)
+        navigate("/oder-success")
     }
 
     return (
@@ -202,26 +245,28 @@ function Payment() {
                                     Secure Checkout
                                 </h3>
                                 <p className="text-sm text-green-600">
-                                    All transactions are encrypted using industry-standard
-                                    security. Your payment details remain safe and private.
+                                    Payments are processed securely.
+                                    For M-Pesa, you'll receive an STK Push on your registered phone number.
+                                    Your PIN is entered only in the official M-Pesa prompt and is never stored by TechHub.
                                 </p>
                             </div>
                         </div>
                     </div>
                     <button
-                        onClick={handlePlaceHolder}
-                        //disabled={!paymentMethod}
-                        className={`w-full py-4 rounded-xl font-semibold transition ${
-                            paymentMethod
+                        onClick={handlePlaceOrder}
+                        disabled={!paymentMethod || isProcessing}
+                        className={`w-full mt-8 py-4 rounded-xl font-semibold transition ${
+                            !paymentMethod || isProcessing
                                 ? "bg-blue-600 hover:bg-blue-700 text-white"
-                                : "bg-slate-300 cursor-not-allowed"
+                                : "bg-slate-300 text-slate-500 cursor-not-allowed"  
                         }`}
                     >
-                        {paymentMethod === "M-Pesa" && "Pay with M-Pesa"}
-                        {paymentMethod === "Credit/Debit Card" && "Pay with Card"}
-                        {paymentMethod === "Cash On Delivery" && "Place Order"}
-                        {!paymentMethod && "Select Payment Method"}
+                        {isProcessing 
+                            ? "Processing Order..."
+                            : `Place Order - Kshs. ${total.toLocaleString()}`
+                        }
                     </button>
+
                 </div>
 
                 {/* Order Summary */}
