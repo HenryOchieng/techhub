@@ -12,6 +12,14 @@ import {
 } from "react-icons/fi"
 
 function Payment() {
+    const clearCart = useCartStore(
+        (state) => state.clearCart
+    )
+
+    const clearCheckout = useCheckoutStore(
+        (state) => state.clearCheckout
+    )
+
     const shippingDetails = useCheckoutStore(
         state => state.shippingDetails
     )
@@ -110,8 +118,12 @@ function Payment() {
 
         createOrder(order)
 
+        clearCart()
+        clearCheckout()
+
         setIsProcessing(false)
-        navigate("/oder-success")
+
+        navigate("/order-success")
     }
 
     return (
