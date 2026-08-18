@@ -15,6 +15,7 @@ import Checkout from "./pages/Checkout"
 import Payment from "./pages/Payment"
 import OrderSuccess from "./pages/OrderSuccess"
 import Orders from "./pages/Orders"
+import OrderDetails from "./pages/OrderDetails"
 
 function App() {
   const cartOpen = useUIStore(state => state.cartOpen)
@@ -34,6 +35,7 @@ function App() {
         <Route path="/payment" element={<Payment />} />
         <Route path="/order-success" element={<OrderSuccess />} />
         <Route path="/orders" element={<Orders/>}/>
+        <Route path="/order/:orderNumber" element={<OrderDetails/>}/>
       </Routes>
       {cartOpen && <CartDrawer />}
     </>

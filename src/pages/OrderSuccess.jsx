@@ -179,8 +179,8 @@ function OrderSuccess() {
                             <h2 className="text-xl font-bold">
                                 Delivery Address
                             </h2>
-
-                            <div className="space-y-1 text-slate-600">
+                        </div>
+                        <div className="space-y-1 text-slate-600">
                                 <p className="font-semibold text-slate-900">
                                     {shippingDetails.firstName}{" "}
                                     {shippingDetails.lastName}
@@ -198,7 +198,6 @@ function OrderSuccess() {
                                     {shippingDetails.town},{" "}
                                     {shippingDetails.county}
                                 </p>
-                            </div>
                         </div>
                     </div>
                 </div>
