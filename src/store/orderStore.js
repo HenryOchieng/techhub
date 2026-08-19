@@ -15,17 +15,58 @@ const useOrderStore = create(
                     ],
                     currentOrder: order 
                 })),
-            
-                clearCurrentOrder: () =>
-                    set({
-                        currentOrder: null
-                    }),
 
-                clearOrders: () =>
-                    set({
-                        orders: [],
-                        currentOrder: null
-                    })
+            updateOrderStatus: (orderNumber, status) => 
+                set((state) => ({
+                    orders: state.orders.map((order) =>
+                        order.orderNumber === orderNumber
+                            ? { ...order, status}
+                            : order
+                    ),
+
+                    currentOrder:
+                        state.currentOrder?.orderNumber === orderNumber
+                            ? {
+                                ...state.currentOrder,
+                                status
+                            }
+                            : state.currentOrder
+                })),
+
+            clearCurrentOrder: () =>
+                set({
+                    currentOrder: null
+                }),
+
+            clearOrders: () =>
+                set({
+                    order: [],
+                    currentOrder: null
+                }),
+
+            cancelOrder: (orderNumber) =>
+                set((state) => ({
+                    orders: state.orders.map((order) =>
+                        order.orderNumber === orderNumber && 
+                        ["Pending", "Confirmed"].includes(order.status)
+                            ? {
+                                ...order,
+                                status: "Cancelled"
+                            }
+                            : order
+                    ),
+
+                    currentOrder:
+                        state.currentOrder?.orderNumber === orderNumber &&
+                        ["Pending", "Confirmed"].includes(
+                            state.currentOrder.status
+                        )
+                            ? {
+                                ...state.currentOrder,
+                                status: "Cancelled"
+                            }
+                            : state.currentOrder
+                }))
         }),
         {
             name: "order-storage"

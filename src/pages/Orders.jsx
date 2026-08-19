@@ -32,6 +32,31 @@ function Orders() {
         )
     }
 
+    const getStatusStyle = (status) => {
+        switch (status) {
+            case "Pending":
+                return "bg-yellow-100 text-yellow-700"
+
+            case "Confirmed":
+                return "bg-blue-100 text-blue-700"
+
+            case "Processing":
+                return "bg-purple-100 text-purple-700"
+
+            case "Shipped":
+                return "bg-orange-100 text-orange-700"
+
+            case "Delivered":
+                return "bg-green-100 text-green-700"
+
+            case "Cancelled":
+                return "bg-red-100 text-red-700"
+
+            default:
+                return "bg-slate-100 text-slate-600"
+        }
+    }
+
     return (
         <div className="max-w-6xl mx-auto px-6 py-12">
             <div className="mb-10">
@@ -78,7 +103,9 @@ function Orders() {
                                         )}
                                     </p>
                                 </div>
-                                <span className="self-start md:self-center bg-yellow-100-700 px-4 py-2 rounded-full text-sm font-semibold">
+                                <span className={`self-start md:self-center px-4 py-2 rounded-full text-sm font-semibold ${getStatusStyle(
+                                    order.status
+                                )}`}>
                                     {order.status}
                                 </span>
                             </div>

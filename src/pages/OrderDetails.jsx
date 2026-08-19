@@ -1,3 +1,4 @@
+import { useState } from "react"
 import { FiArrowLeft, FiCheck, FiMapPin, FiCreditCard, FiPackage } from "react-icons/fi"
 import { useNavigate, useParams } from "react-router-dom"
 import useOrderStore from "../store/orderStore"
@@ -11,8 +12,46 @@ function OrderDetails () {
     )
 
     const order = orders.find(
-        (order) => order.orderNumber === orderNumber
+        (item) => item.orderNumber === orderNumber
     )
+
+    const updateOrderStatus = useOrderStore(
+        (state) => state.updateOrderStatus
+    )
+
+    const getStatusStyle = (status) => {
+        switch (status) {
+            case "Pending":
+                return "bg-yellow-100 text-yellow-700"
+
+            case "Confirmed":
+                return "bg-blue-100 text-blue-700"
+
+            case "Processing":
+                return "bg-purple-100 text-purple-700"
+
+            case "Shipped":
+                return "bg-orange-100 text-orange-700"
+
+            case "Delivered":
+                return "bg-green-100 text-green-700"
+
+            case "Cancelled":
+                return "bg-red-100 text-red-700"
+
+            default:
+                return "bg-slate-100 text-slate-600"
+        }
+    }
+
+    const cancelOrder = useOrderStore(
+        (state) => state.cancelOrder
+    )
+
+    const canCancel = ["Pending", "Confirmed"].includes(order.status)
+
+    const [showCancelModal, setShowCancelModal] = useState(false)
+
 
     if (!order) {
         return (
@@ -38,14 +77,14 @@ function OrderDetails () {
     }
 
     const statusSteps = [
-        "Order Placed",
-        "Payment Confirmed",
+        "Pending",
+        "Confirmed",
         "Processing",
-        "Shipping",
+        "Shipped",
         "Delivered"
     ]
 
-    const currentStatusIndex = 2
+    const currentStatusIndex =  statusSteps.indexOf(order.status)
 
     return (
         <div className="max-w-6xl mx-auto px-6 py-12">
@@ -80,60 +119,119 @@ function OrderDetails () {
                         )}
                     </p>
                 </div>
-                <span className="self-start bg-yellow-100 text-yellow-700 px-5 py-2 rounded-full font-semibold">
+                <span className={`self-start px-5 py-2 rounded-full font-semibold ${getStatusStyle(
+                    order.status
+                )}`}>
                     {order.status}
                 </span>
             </div>
 
             {/* Order Status */}
-            <div className="bg-white rounded-2xl shadow p-6 mb-8">
-                <h2 className="text-xl font-bold mb-8">
-                    Order Status
-                </h2>
-                <div className="flex flex-col md:flex-row md:items-center">
-                    {statusSteps.map((step, index) => {
-                        const completed = index <= currentStatusIndex
-                        return (
-                            <div
-                                key={step}
-                                className="flex md:flex-1 items-center"
-                            >
-                                <div className="flex md:flex-col items-center">
-                                    <div
-                                        className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                                            completed
-                                                ? "bg-blue-600 text-white"
-                                                : "bg-slate-200 text-slate-400"
-                                        }`}
-                                    >
-                                        {completed
-                                            ? <FiCheck />
-                                            : index + 1 
-                                        }
-                                    </div>
-                                    <span className={`ml-4 md:ml-0 md:mt-3 text-sm font-medium text-center ${
-                                        completed
-                                            ? "text-blue-600"
-                                            : "text-slate-400"
-                                    }`}
-                                    >
-                                        {step}   
-                                    </span>
-                                </div>
-                                {index < statusSteps.length -1 && (
-                                    <div
-                                        className={`hidden md:block flex-1 h-1 mx-4 ${
-                                            index < currentStatusIndex
-                                                ? "bg-blue-600"
-                                                : "bg-slate-200"
-                                        }`}
-                                    />
-                                )}
-                            </div>
-                        )
-                    })}
+            {order.status === "Cancelled" ? (
+                <div className="bg-red-50 border border-red-200 rounded-xl p-5">
+                    <h3 className="font-bold text-red-700">
+                        Order Cancelled
+                    </h3>
+                    <p className="text-sm text-red-600 mt-1">
+                        This order has been cancelled and will not be processed.
+                    </p>
                 </div>
+            ) : (
+                <div className="bg-white rounded-2xl shadow p-6 mb-8">
+                    <h2 className="text-xl font-bold mb-8">
+                        Order Status
+                    </h2>
+                    <div className="flex flex-col md:flex-row md:items-center">
+                        {statusSteps.map((step, index) => {
+                            const completed = index <= currentStatusIndex
+                            return (
+                                <div
+                                    key={step}
+                                    className="flex md:flex-1 items-center"
+                                >
+                                    <div className="flex md:flex-col items-center">
+                                        <div
+                                            className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                                                completed
+                                                    ? "bg-blue-600 text-white"
+                                                    : "bg-slate-200 text-slate-400"
+                                            }`}
+                                        >
+                                            {completed ? (
+                                                <FiCheck />
+                                            ) : (
+                                                index + 1
+                                            )}
+                                        </div>
+                                        <span className={`ml-4 md:ml-0 md:mt-3 text-sm font-medium text-center ${
+                                            completed
+                                                ? "text-blue-600"
+                                                : "text-slate-400"
+                                        }`}
+                                        >
+                                            {step}   
+                                        </span>
+                                    </div>
+                                    {index < statusSteps.length -1 && (
+                                        <div
+                                            className={`hidden md:block flex-1 h-1 mx-4 ${
+                                                index < currentStatusIndex
+                                                    ? "bg-blue-600"
+                                                    : "bg-slate-200"
+                                            }`}
+                                        />
+                                    )}
+                                </div>
+                            )
+                        })}
+                    </div>
+                </div>     
+            )}
+
+            {/* Temporary Order Status Selector */}
+            <div className="mt-8 border-t pt-6">
+                <p className="text-sm text-slate-500 mb-2">
+                    Test Order Status (For Development Only)
+                </p>
+                <select
+                    value={order.status}
+                    onChange={(e) => 
+                        updateOrderStatus(
+                            order.orderNumber,
+                            e.target.value
+                        )
+                    }
+                    className="border rounded-xl px-4 py-3 focus:outline-none focus:ring-blue-600"
+                >
+                    <option value="Pending">Pending</option>
+                    <option value="Confirmed">Confirmed</option>
+                    <option value="Processing">Processing</option>
+                    <option value="Shipped">Shipped</option>
+                    <option value="Delivered">Delivered</option>
+                </select>
             </div>
+
+            {/* Cancel Order */}
+            {canCancel && (
+                <div className="bg-white rounded-2xl shadow p-6 mb-8">
+                    <h2 className="text-lg font-bold">
+                        Cancel Order
+                    </h2>
+                    <p className="text-slate-500 text-sm mt-2">
+                        You can cancel this order while it is still
+                        pending or confimed.
+                    </p>
+                    <button
+                        onClick={() => {
+                            setShowCancelModal(true)
+                        }}
+                        className="mt-4 border border-red-500 text-red-500 hover:bg-red-500 hover:text-white px-5 py-3 rounded-xl font-semibold transition"
+                    >
+                        Cancel Order
+                    </button>
+                </div>
+            )}
+
             <div className="grid lg:grid-cols-[2fr_1fr] gap-8">
 
                 {/* Left Column */}
@@ -277,6 +375,42 @@ function OrderDetails () {
                     </div>
                 </div>
             </div>
+            {showCancelModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-6">
+                    <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6">
+                        <h2 className="text-2xl font-bold">
+                            Cancel Order?
+                        </h2>
+                        <p className="text-slate-500 mt-3">
+                            Are you sure you want to cancel order{" "}
+                            <span className="font-semibold text-slate-700">
+                                {order.orderNumber}
+                            </span>
+                            ?
+                        </p>
+                        <p className="text-sm text-slate-500 mt-2">
+                            This action cannot be undone
+                        </p>
+                        <div className="flex justify-end gap-3 mt-8">
+                            <button
+                                onClick={() => setShowCancelModal(false)}
+                                className="border border-slate-300 text-slate-600 hover:bg-slate-100 px-5 py-3 rounded-xl font-semibold transition"
+                            >
+                                Keep Order
+                            </button>
+                            <button
+                                onClick={() => {
+                                    cancelOrder(order.orderNumber)
+                                    setShowCancelModal(false)
+                                }}
+                                className="bg-red-500 hover:bg-red-600 text-white px-5 py-3 rounded-xl font-semibold transition"
+                            >
+                                Yes, Cancel Order
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     )
 }

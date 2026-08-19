@@ -50,37 +50,6 @@ function Payment() {
     const [expiryDate, setExpiryDate] = useState("")
     const [cvv, setCvv] = useState("")
 
-    const handlePlaceHolder = () => {
-        switch (paymentMethod) {
-            case "M-Pesa":
-                initiateSTKPush();
-                break;
-
-            case "Credit/Debit Card":
-                redirectToCardPayment();
-                break;
-
-            case "Cash On Delivery":
-                createCashOrder();
-                break;
-
-            default:
-                alert("Please select a payment method")
-        }
-    }
-
-    const initiateSTKPush = () => {
-        console.log("Initiating STK Push...")
-    }
-
-    const redirectToCardPayment = () => {
-        console.log("Redirecting to card payment gateway...")
-    }
-
-    const createCashOrder = () => {
-        console.log("Creating cash on delivery order...")
-    }
-
     const navigate = useNavigate()
 
     const createOrder = useOrderStore(
