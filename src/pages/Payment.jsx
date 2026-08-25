@@ -28,13 +28,7 @@ function Payment() {
         state => state.cart
     )
 
-    const paymentMethod = useCheckoutStore(
-        state => state.paymentMethod
-    )
-
-    const setPaymentMethod = useCheckoutStore(
-        state => state.setPaymentMethod
-    )
+    const [paymentMethod, setPaymentMethod] = useState("")
 
     const subtotal = cart.reduce(
         (sum, item) => sum + item.price * item.quantity,
@@ -58,8 +52,32 @@ function Payment() {
 
     const [isProcessing, setIsProcessing] = useState(false)
 
+    const isPaymentValid = () => {
+        if (!paymentMethod) {
+            return false
+        }
+
+        if (paymentMethod === "M-Pesa") {
+            return mpesaNumber.trim().length > 0
+        }
+
+        if (paymentMethod === "Credit/Debit Card") {
+            return (
+                cardNumber.trim().length > 0 &&
+                expiryDate.trim().length > 0 &&
+                cvv.trim().length > 0
+            )
+        }
+
+        if (paymentMethod === "Cash On Delivery") {
+            return true
+        }
+
+        return false
+    }
+
     const handlePlaceOrder = async () => {
-        if (!paymentMethod) return 
+        if (!isPaymentValid()) return 
 
         setIsProcessing(true)
 
@@ -78,10 +96,15 @@ function Payment() {
             items: cart,
             shippingDetails,
             paymentMethod,
+            mpesaNumber:
+                paymentMethod === "M-Pesa"
+                    ? mpesaNumber
+                    : null,
             subtotal,
             shipping,
             total,
             status: "Pending",
+            paymentStatus: "Pending",
             orderDate: new Date().toISOString()
         }
 
@@ -132,6 +155,7 @@ function Payment() {
                                 onChange={(e) => setMpesaNumber(e.target.value)}
                                 className="w-full border rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-green-500"
                             />
+
                             <button
                                 disabled={!mpesaNumber}
                                 className={`mt-5 w-full py-3 rounded-xl font-semibold text-white transition ${
@@ -156,7 +180,7 @@ function Payment() {
                             <h3 className="text-xl font-semibold mb-4 text-blue-700">
                                 Card Payment
                             </h3>
-                            <div className="space-7-4">
+                            <div className="space-y-4">
                                 <div>
                                     <label className="block mb-2 font-medium">
                                         Card Number
@@ -172,7 +196,7 @@ function Payment() {
                                 <div className="grid grid-cols-2 gap-4">
                                     <div>
                                         <label className="block mb-2 font-medium">
-                                            Expriry Date
+                                            Expiry Date
                                         </label>
                                         <input
                                             type="text"
@@ -213,7 +237,7 @@ function Payment() {
                                 Cash on Delivery
                             </h3>
                             <p className="text-gray-700">
-                                You will pay in cash when your oder is delivered.
+                                You will pay in cash when your order is delivered.
                             </p>
                         </div>
                     )}
@@ -235,11 +259,11 @@ function Payment() {
                     </div>
                     <button
                         onClick={handlePlaceOrder}
-                        disabled={!paymentMethod || isProcessing}
+                        disabled={!isPaymentValid() || isProcessing}
                         className={`w-full mt-8 py-4 rounded-xl font-semibold transition ${
-                            !paymentMethod || isProcessing
-                                ? "bg-blue-600 hover:bg-blue-700 text-white"
-                                : "bg-slate-300 text-slate-500 cursor-not-allowed"  
+                            !isPaymentValid() || isProcessing
+                                ? "bg-slate-300 text-slate-500 cursor-not-allowed"
+                                : "bg-blue-600 hover:bg-blue-700 text-white"  
                         }`}
                     >
                         {isProcessing 

@@ -44,6 +44,25 @@ function OrderDetails () {
         }
     }
 
+    const getPaymentStatusStyle = (status) => {
+        switch (status) {
+            case "Paid":
+                return "bg-green-100 text-green-700"
+
+            case "Pending":
+                return "bg-yellow-100 text-yellow-700"
+
+            case "Failed":
+                return "bg-red-100 text-red-700"
+
+            case "Refunded":
+                return "bg-purple-100 text-purple-700"
+
+            default:
+                return "bg-slate-100 text-slate-600"
+        }
+    }
+
     const cancelOrder = useOrderStore(
         (state) => state.cancelOrder
     )
@@ -187,6 +206,18 @@ function OrderDetails () {
                     </div>
                 </div>     
             )}
+
+            {/* Payment-status Helper */}
+            <div className="mt-4">
+                <p className="text-sm text-slate-500 mb-2">
+                    Payment Status
+                </p>
+                <span
+                    className={`inline-block px-4 py-2 rounded-full text-sm font-semibold ${getPaymentStatusStyle(order.paymentStatus)}`}
+                >
+                    {order.paymentStatus || "Pending"}
+                </span>
+            </div>
 
             {/* Temporary Order Status Selector */}
             <div className="mt-8 border-t pt-6">
