@@ -76,6 +76,24 @@ function Payment() {
         return false
     }
 
+    const handleMpesaPayment = async () => {
+        if (!mpesaNumber.trim()) return
+        
+        setMpesaNumber("processing")
+
+        try {
+            // Temporary simulation. This will later call the backend M-Pesa endpoint
+            await new Promise((resolve) =>
+                setTimeout(resolve, 2000)
+            )
+
+            setMpesaStatus("success")
+        } catch (error) {
+            console.error("M-Pesa payment error:", error)
+            setMpesaStatus("failed")
+        }
+    }
+
     const handlePlaceOrder = async () => {
         if (!isPaymentValid()) return 
 
@@ -118,6 +136,8 @@ function Payment() {
         navigate("/order-success")
     }
 
+    const [mpesaStatus, setMpesaStatus] = useState("idle")
+
     return (
         <div className="max-w-7xl mx-auto px-6 py-12">
             <h1 className="text-4xl font-bold mb-10">
@@ -157,13 +177,50 @@ function Payment() {
                             />
 
                             <button
-                                disabled={!mpesaNumber}
+                                onClick={handleMpesaPayment}
+                                disabled={!mpesaNumber || mpesaStatus === "processing"}
                                 className={`mt-5 w-full py-3 rounded-xl font-semibold text-white transition ${
-                                    mpesaNumber ? "bg-green-600 hover:bg-green-700" : "bg-gray-400 cursor-not-allowed"
+                                    !mpesaNumber || mpesaStatus === "processing"
+                                        ? "bg-gray-400 cursor-not-allowed"
+                                        : "bg-green hover:bg-green-700"
                                 }`}
                             >
-                                Send STK Push
+                                
+                                {mpesaStatus === "processing"
+                                    ? "Sending STK Push..."
+                                    : mpesaStatus === "success"
+                                        ? "Payment Request Sent"
+                                        : "Send STK Push"
+                                }    
                             </button>
+
+                            {mpesaStatus === "processing" && (
+                                <p className="mt-3 text-sm text-green-700">
+                                    Sending payment request to your phone...
+                                </p>
+                            )}
+
+                            {mpesaStatus === "success" && (
+                                <div className="mt-4 bg-green-100 border border-green-200 rounded-xl p-4">
+                                    <p className="font-semibold text-green-700">
+                                        STK Push sent successfully.
+                                    </p>
+                                    <p className="text-sm text-green-600 mt-1">
+                                        Check your phone and enter your M-Pesa PIN to complete the payment.
+                                    </p>
+                                </div>
+                            )}
+
+                            {mpesaStatus === "failed" && (
+                                <div className="mt-4 bg-red-100 border border-red-200 rounded-xl p-4">
+                                    <p className="font-semibold text-red-700">
+                                        Payment request failed.
+                                    </p>
+                                    <p className="text-sm text-red-600 mt-1">
+                                        Please check the phone number and try again.
+                                    </p>
+                                </div>
+                            )}
                         </div>
                     )}
 
