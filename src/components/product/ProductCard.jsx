@@ -23,9 +23,11 @@ function ProductCard({ product }) {
                         className="h-60 w-full object-cover group-hover:scale-105 transition duration-500" 
                     />
                 </Link>
-                {product.badge && (
-                    <span className="absolute top-4 left-4 bg-blue-600 text-white px-3 py-1 rounded-full text-sm">
-                        {product.badge}
+                {product.oldPrice && product.oldPrice > product.price && (
+                    <span className="absolute top-4 left-4 bg-red-500 text-white px-3 py-1 rounded-full text-sm font-semibold">
+                        {Math.round(
+                            ((product.oldPrice - product.price) / product.oldPrice) * 100
+                        )}% OFF
                     </span>
                 )}
             </div>
@@ -44,15 +46,22 @@ function ProductCard({ product }) {
                     reviews={product.reviews.length}
                     size={14}
                 />
-                <div className="flex items-center gap-3 mt-4">
-                    <span className="text-blue-600 font-bold text-xl">
-                        KSHS. {product.price.toLocaleString()}
-                    </span>
-
-                    {product.oldPrice && (
-                        <span className="line-through text-slate-400">
-                            KSHS. {product.oldPrice.toLocaleString()}
+                <div className="mt-4">
+                    <div className="flex items-center gap-3">
+                        <span className="text-blue-600 font-bold text-xl">
+                            KSHS. {product.price.toLocaleString()}
                         </span>
+                        {product.oldPrice && product.oldPrice > product.price && (
+                            <span className="line-through text-slate-400">
+                                KSHS. {product.oldPrice.toLocaleString()}
+                            </span>
+                        )}
+                    </div>
+                    {product.oldPrice && product.oldPrice > product.price && (
+                        <p className="text-sm text-green-600 font-medium mt-1">
+                            Save KSHS. {" "}
+                            {(product.oldPrice - product.price).toLocaleString()}
+                        </p>
                     )}
                 </div>
 
