@@ -13,6 +13,12 @@ function ProductCard({ product }) {
         (state) => state.toggleWishlist
     )
 
+    const discountPercentage = 
+        product.oldPrice > 0 && product.oldPrice > product.price
+            ? Math.round(
+                ((product.oldPrice - product.price) / product.oldPrice) * 100
+            ) : 0
+
     return (
         <div className="bg-white rounded-2xl overflow-hidden shadow hover:shadow-xl transition duration-300 group ">
             <div className="relative overflow-hidden">
@@ -25,9 +31,7 @@ function ProductCard({ product }) {
                 </Link>
                 {product.oldPrice && product.oldPrice > product.price && (
                     <span className="absolute top-4 left-4 bg-red-500 text-white px-3 py-1 rounded-full text-sm font-semibold">
-                        {Math.round(
-                            ((product.oldPrice - product.price) / product.oldPrice) * 100
-                        )}% OFF
+                        {discountPercentage}% OFF
                     </span>
                 )}
             </div>
@@ -57,12 +61,13 @@ function ProductCard({ product }) {
                             </span>
                         )}
                     </div>
-                    {product.oldPrice && product.oldPrice > product.price && (
+                    {discountPercentage > 0 && (
                         <p className="text-sm text-green-600 font-medium mt-1">
-                            Save KSHS. {" "}
+                            Save KSHS.{" "}
                             {(product.oldPrice - product.price).toLocaleString()}
                         </p>
                     )}
+
                 </div>
 
                 <div className="flex items-center justify-between mt-6">
