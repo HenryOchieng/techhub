@@ -1,13 +1,20 @@
 import { useState } from "react"
+import { useSearchParams } from "react-router-dom"
 import { FiX } from "react-icons/fi"
 import ProductCard from "../components/product/ProductCard"
 import { products } from "../data/products"
 import Rating from "../components/product/Rating"
 
 function Shop() {
+    const [searchParams] = useSearchParams()
+
+    const categoryFromUrl = searchParams.get("category")
+
     const [search, setSearch] = useState("")
 
     const [selectedCategory, setSelectedCategory] = useState("All")
+
+    const activeCategory = categoryFromUrl || selectedCategory
 
     const [selectedBrands, setSelectedBrands] = useState([])
 
@@ -28,8 +35,8 @@ function Shop() {
             product.category.toLowerCase().includes(search.toLowerCase())
 
         const matchesCategory =
-            selectedCategory === "All" || 
-            product.category === selectedCategory
+            activeCategory === "All" || 
+            product.category === activeCategory
 
         const matchesBrand = 
             selectedBrands.length === 0 || 
