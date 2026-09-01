@@ -68,9 +68,9 @@ function Deals() {
                     onChange={(e) => setSortBy(e.target.value)}
                     className="border rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-blue-600"
                 >
-                    <opttion value="discount">
+                    <option value="discount">
                         Biggest Discount
-                    </opttion>
+                    </option>
                     <option value="price-low">
                         Price: Low to High
                     </option>
@@ -84,7 +84,7 @@ function Deals() {
             </div>
 
             {/* Deals Banner */}
-            <div className="bg-slate-900 text-white rounded-2xl p=6 md:p-8 mb-8">
+            <div className="bg-slate-900 text-white rounded-2xl p-6 md:p-8 mb-8">
                 <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-5">
                     <div>
                         <h2 className="text-2xl font-bold">
