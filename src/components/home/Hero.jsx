@@ -1,5 +1,6 @@
 import { motion } from "framer-motion"
 import { FiArrowRight } from "react-icons/fi"
+import { Link } from "react-router-dom"
 
 function Hero() {
     return (
@@ -32,13 +33,19 @@ function Hero() {
                     </p>
 
                     <div className="mt-10 flex gap-5 flex-wrap">
-                        <button className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-4 rounded-xl font-semibold transition">
+                        <Link
+                            to="/shop" 
+                            className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-4 rounded-xl font-semibold transition"
+                        >
                             Shop Now
-                        </button>
-                        <button className="border-blue-600 hover:bg-blue-600 hover:text-white px-8 py-4 rounded-xl font-semibold transition flex items-center gap-2">
+                        </Link>
+                        <Link
+                            to="/categories" 
+                            className="border-blue-600 hover:bg-blue-600 hover:text-white px-8 py-4 rounded-xl font-semibold transition flex items-center gap-2"
+                        >
                             Browse Products
                             <FiArrowRight />
-                        </button>
+                        </Link>
                     </div>
 
                 </motion.div>
