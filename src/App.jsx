@@ -1,6 +1,7 @@
 import { Routes, Route } from "react-router-dom";
 
 import Navbar from "./components/layout/Navbar"
+import Footer from "./components/layout/Footer"
 
 import Home from "./pages/Home"
 import Shop from "./pages/Shop"
@@ -37,6 +38,7 @@ function App() {
         <Route path="/orders" element={<Orders/>}/>
         <Route path="/order/:orderNumber" element={<OrderDetails/>}/>
       </Routes>
+      <Footer />
       {cartOpen && <CartDrawer />}
     </>
   )

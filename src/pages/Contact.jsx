@@ -19,7 +19,7 @@ function Contact() {
 
     const handleSubmit = (e) => {
         e.preventDefault()
-        toast.success("Message sent successfullt!")
+        toast.success("Message sent successfully!")
         setFormData({
             name: "",
             email: "",
