@@ -19,6 +19,7 @@ import Orders from "./pages/Orders"
 import OrderDetails from "./pages/OrderDetails"
 import Wishlist from "./pages/wishlist";
 import Account from "./pages/Account"
+import AdminDashBoard from "./pages/admin/AdminDashboard";
 
 function App() {
   const cartOpen = useUIStore(state => state.cartOpen)
@@ -41,6 +42,7 @@ function App() {
         <Route path="/order/:orderNumber" element={<OrderDetails/>}/>
         <Route path="/wishlist" element={<Wishlist />} />
         <Route path="/account" element={<Account />} />
+        <Route path="/admin" element={<AdminDashBoard />} />
         
       </Routes>
       <Footer />
