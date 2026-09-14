@@ -1,3 +1,4 @@
+import AdminHeader from "./AdminHeader"
 import { NavLink, Outlet } from "react-router-dom"
 import {
     FiGrid,
@@ -6,7 +7,6 @@ import {
     FiUsers,
     FiLayers,
     FiArrowLeft,
-    FiMenu,
     FiX
 } from "react-icons/fi"
 import { useState } from "react"
@@ -129,22 +129,8 @@ function AdminLayout() {
 
             {/* Main area */}
             <div className="flex-1 min-w-0">
-
-                {/* Mobile Header */}
-                <header className="lg:hidden h-16 bg-white border-b border-slate-200 flex items-center px-5">
-                    <button
-                        onClick={() => setSidebarOpen(true)}
-                        className="text-slate-700 hover:text-blue-600 transition"
-                    >
-                        <FiMenu className="text-2xl" />
-                    </button>
-                    <div className="ml-4">
-                        <p className="font-bold text-slate-900">
-                            Admin Dashboard
-                        </p>
-                    </div>
-                </header>
-
+                <AdminHeader onMenuClick={() => setSidebarOpen(true)} />
+                        
                 {/* Page Content */}
                 <main>
                     <Outlet />
