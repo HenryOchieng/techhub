@@ -24,6 +24,7 @@ import Account from "./pages/Account"
 
 import AdminLayout from "./components/admin/AdminLayout"
 import AdminDashBoard from "./pages/admin/AdminDashboard";
+import AdminOrders from "./pages/admin/AdminOrders";
 
 function App() {
   return (
@@ -52,6 +53,7 @@ function App() {
         {/* Admin Side */}
         <Route path="/admin" element={<AdminLayout />}>
           <Route index element={<AdminDashBoard />}/>
+          <Route path="orders" element={<AdminOrders />}/>
         </Route>
     </Routes>
   )
