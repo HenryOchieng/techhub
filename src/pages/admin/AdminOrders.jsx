@@ -2,20 +2,39 @@ import { useState } from "react"
 import {
     FiSearch,
     FiEye,
-    FiFilter
+    FiFilter, 
+    FiX,
+    FiPackage
 } from "react-icons/fi"
 
 function AdminOrders() {
     const [search, setSearch] = useState("")
     const [statusFilter, setStatusFilter] = useState("All")
+    const [selectedOrder, setSelectedOrder] = useState(null)
 
     const orders = [
         {
             id: "TH-1001",
             customer: "John Doe",
             date: "14 Sep 2026",
-            items: 2,
+            items: [
+                {
+                    id: 1,
+                    name: "HP EliteBook 840 G8",
+                    quantity: 1,
+                    price: 89000,
+                    image: null
+                },
+                {
+                    id: 2,
+                    name: "Logitech MX Master 3S",
+                    quantity: 1,
+                    price: 14500,
+                    image: null
+                }
+            ],
             total: 98000,
+            paymentMethod: "M-Pesa",
             paymentStatus: "Paid",
             status: "Pending"
         },
@@ -23,8 +42,24 @@ function AdminOrders() {
             id: "TH-1000",
             customer: "Jane Smith",
             date: "13 Sep 2026",
-            items: 3,
-            total: "145000",
+            items: [
+                {
+                    id: 3,
+                    name: "Dell Latitude 7420",
+                    quantity: 1,
+                    price: 98000,
+                    image: null
+                },
+                {
+                    id: 4,
+                    name: "Logitech MX Master 3S",
+                    quantity: 2,
+                    price: 14500,
+                    image: null
+                }
+            ],
+            total: "127000",
+            paymentMethod: "Credit/Debit Card",
             paymentStatus: "Paid",
             status: "Processing"
         },
@@ -32,8 +67,17 @@ function AdminOrders() {
             id: "TH-999",
             customer: "Peter Otieno",
             date: "12 Sep 2026",
-            items: 1,
+            items: [
+                {
+                    id: 5,
+                    name: "Samsung 27-inch IPS Monitor",
+                    quantity: 1,
+                    price: 32000,
+                    image: null
+                }
+            ],
             total: 32000,
+            paymentMethod: "Cash On Delivery",
             paymentStatus: "Pending",
             status: "Pending"
         },
@@ -41,8 +85,24 @@ function AdminOrders() {
             id: "TH-998",
             customer: "Mary Achieng",
             date: "11 Sep 2026",
-            items: 4,
-            total: 215000,
+            items: [
+                {
+                    id: 6,
+                    name: "HP EliteBook 840 G8",
+                    quantity: 2,
+                    price: 8900,
+                    image: null
+                },
+                {
+                    id: 7,
+                    name: "Logitech MX Master 3S",
+                    quantity: 2,
+                    price: 14500,
+                    image: null
+                }
+            ],
+            total: 207000,
+            paymentMethod: "M-Pesa",
             paymentStatus: "Paid",
             status: "Completed"
         },
@@ -50,8 +110,17 @@ function AdminOrders() {
             id: "TH-997",
             customer: "David Jacobs",
             date: "10 Sep 2026",
-            items: 2,
-            total: 76000,
+            items: [
+                {
+                    id: 8,
+                    name: "Dell Latitude 7420",
+                    quantity: 1,
+                    price: 98000,
+                    image: null
+                }
+            ],
+            total: 98000,
+            paymentMethod: "M-Pesa",
             paymentStatus: "Paid",
             status: "Cancelled"
         }
@@ -75,13 +144,13 @@ function AdminOrders() {
                 return "bg-green-100 text-green-700"
 
             case "Processing":
-                return "bg-wblue-100 text-blue-700"
+                return "bg-blue-100 text-blue-700"
 
             case "Pending":
                 return "bg-yellow-100 text-yellow-700"
 
             case "Cancelled":
-                return "bg-red-100 tect-red-700"
+                return "bg-red-100 text-red-700"
 
             default:
                 return "bg-slate-100 text-slate-700"
@@ -188,7 +257,7 @@ function AdminOrders() {
                             {filteredOrders.map((order) => (
                                 <tr
                                     key={order.id}
-                                    className="hover:bg-slate-50 trasition"
+                                    className="hover:bg-slate-50 transition"
                                 >
                                     <td className="px-6 py-5 font-semibold text-slate-900">
                                         #{order.id}
@@ -200,7 +269,10 @@ function AdminOrders() {
                                         {order.date}
                                     </td>
                                     <td className="px-6 py-5 text-slate-700">
-                                        {order.items}
+                                        {order.items.reduce(
+                                            (total, item) => total + item.quantity,
+                                            0
+                                        )}
                                     </td>
                                     <td className="px-6 py-5 font-semibold text-slate-900 whitespace-nowrap">
                                         Kshs. {Number(order.total).toLocaleString()}
@@ -217,6 +289,7 @@ function AdminOrders() {
                                     </td>
                                     <td className="px-6 py-5">
                                         <button
+                                            onClick={() => setSelectedOrder(order)}
                                             className="w-9 h-9 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center hover:bg-blue-100 transition"
                                             aria-label={`View order ${order.id}`}
                                         >
@@ -239,6 +312,183 @@ function AdminOrders() {
                     </table>
                 </div>
             </div>
+            {selectedOrder && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                    
+                    {/* Overlay */}
+                    <div
+                        className="absolute inset-0 bg-black/50"
+                        onClick={() => setSelectedOrder(null)}
+                    />
+
+                    {/* Modal */}
+                    <div className="relative bg-white w-full max-w-3xl max-h-[90vh] overflow-y-auto rounded-2xl shadow-2xl">
+
+                        {/* Header */}
+                        <div className="sticky top-0 bg-white border-b border-slate-200 px-6 py-5 flex items-center justify-between z-10">
+                            <div>
+                                <p className="text-sm text-slate-500">
+                                    Order Details
+                                </p>
+                                <h2 className="text-2xl font-bold text-slate-900">
+                                    #{selectedOrder.id}
+                                </h2>
+                            </div>
+                            <button
+                                onClick={() => setSelectedOrder(null)}
+                                className="w-10 h-10 rounded-xl bg-slate-100 text-slate-600 flex items-center justify-center hover:bg-slate-200 transition"
+                                aria-label="Close order details"
+                                >
+                                    <FiX className="text-xl" />
+                            </button>
+                        </div>
+
+                        {/* Order Information */}
+                        <div className="p-6 space-y-8">
+
+                            {/* Summary */}
+                            <div>
+                                <h3 className="text-lg font-bold text-slate-900 mb-4">
+                                    Order Information
+                                </h3>
+                                <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                                    <div className="bg-slate-50 rounded-xl p-4">
+                                        <p className="text-xs text-slate-500">
+                                            Order Date
+                                        </p>
+                                        <p className="font-semibold text-slate-900 mt-1">
+                                            {selectedOrder.date}
+                                        </p>
+                                    </div>
+                                    <div className="bg-slate-50 rounded-xl p-4">
+                                        <p className="text-xs text-slate-500">
+                                            Customer
+                                        </p>
+                                        <p className="font-semibold text-slate-900 mt-1">
+                                            {selectedOrder.customer}
+                                        </p>
+                                    </div>
+                                    <div className="bg-slate-50 rounded-xl p-4">
+                                        <p className="text-xs text-slate-500">
+                                            Payment
+                                        </p>
+                                        <p className="font-semibold text-slate-900 mt-1">
+                                            {selectedOrder.paymentStatus}
+                                        </p>
+                                    </div>
+                                    <div className="bg-slate-50 rounded-xl p-4">
+                                        <p className="text-xs text-slate-500">
+                                            Status
+                                        </p>
+                                        <span className={`inline-block mt-1 px-3 py-1 rounded-full text-xs font-semibold ${getStatusStyle(selectedOrder.status)}`}>
+                                            {selectedOrder.status}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Customer */}
+                            <div>
+                                <h3 className="text-lg font-bold text-slate-900 mb-4">
+                                    Customer Information
+                                </h3>
+                                <div className="bg-slate-50 rounded-xl p-5">
+                                    <p className="font-semibold text-slate-900">
+                                        {selectedOrder.customer}
+                                    </p>
+                                    <p className="text-sm text-slate-500 mt-1">
+                                        Customer information will be connected to the
+                                        user account when the backend is implemented.
+                                    </p>
+                                </div>
+                            </div>
+
+                            {/* Products */}
+                            <div>
+                                <h3 className="text-lg font-bold text-slate-900 mb-4">
+                                    Products Ordered
+                                </h3>
+                                <div className="border border-slate-200 rounded-xl overflow-hidden">
+                                    {selectedOrder.items.map((item) => (
+                                        <div
+                                            key={item.id}
+                                            className="flex items-center gap-4 p-4 border-b last:border-b-0 border-slate-200"
+                                        >
+                                            <div className="w-16 h-16 bg-slate-100 rounded-lg flex items-center justify-center overflow-hidden">
+                                                {item.image ? (
+                                                    <img
+                                                        src={item.image}
+                                                        alt={item.name}
+                                                        className="w-full h-full object-contain"
+                                                    />
+                                                ) : (
+                                                    <FiPackage className="text-slate-400 text-2xl" />
+                                                )}
+                                            </div>
+                                            <div className="flex-1">
+                                                <p className="font-semibold text-slate-900">
+                                                    {item.name}
+                                                </p>
+                                                <p className="text-sm text-slate-500 mt-1">
+                                                    Quantity: {item.quantity}
+                                                </p>
+                                            </div>
+                                            <div className="text-right">
+                                                <p className="font-semibold text-slate-900">
+                                                    Kshs. {Number(item.price).toLocaleString()}
+                                                </p>
+                                                <p className="text-xs text-slate-500">
+                                                    each
+                                                </p>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Payment & Total */}
+                            <div>
+                                <h3 className="text-lg font-bold text-slate-900 mb-4">
+                                    Payment Information
+                                </h3>
+                                <div className="bg-slate-50 rounded-xl p-5 space-y-4">
+                                    <div className="flex justify-between">
+                                        <span className="text-slate-500">
+                                            Payment Method
+                                        </span>
+                                        <span className="font-semibold text-slate-900">
+                                            {selectedOrder.paymentMethod}
+                                        </span>
+                                    </div>
+                                    <div className="flex justify-between">
+                                        <span className="text-slate-500">
+                                            Payment Status
+                                        </span>
+                                        <span
+                                            className={`px-3 py-1 rounded-full text-xs font-semibold ${getPaymentStyle(
+                                                selectedOrder.paymentStatus
+                                            )}`}
+                                        >
+                                            {selectedOrder.paymentStatus}
+                                        </span>
+                                    </div>
+                                    <div className="border-t border-slate-200 pt-4 flex justify-between">
+                                        <span className="font-bold text-slate-900">
+                                            Order Total
+                                        </span>
+                                        <span className="text-xl font-bold text-blue-600">
+                                            Kshs.{" "}
+                                            {Number(
+                                                selectedOrder.total || 0
+                                            ).toLocaleString()}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     )
 }
