@@ -10,7 +10,6 @@ import {
 function AdminDashboard() {
 
     // Temporary frontend data
-    // This will eventually come from the backend
     const orders = [
         {
             id: "TH-1001",

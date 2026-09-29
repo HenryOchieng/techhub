@@ -1,4 +1,5 @@
 import { useState } from "react"
+import useProductStore from "../../store/productStore"
 import {
     FiSearch,
     FiEye,
@@ -18,48 +19,18 @@ function AdminProducts() {
     const [addingProduct, setAddingProduct] = useState(false)
     const [deletingProduct, setDeletingProduct] = useState(null)
 
-    const [products, setProducts] = useState([
-        {
-            id: 1,
-            name: "HP EliteBook 840 G8",
-            brand: "HP",
-            category: "Laptops",
-            price: 89000,
-            stock: 12,
-            status: "In Stock",
-            image: null
-        },
-        {
-            id: 2,
-            name: "Dell Latitude 7420",
-            brand: "Dell",
-            category: "Laptops",
-            price: 98000,
-            stock: 8,
-            status: "In Stock",
-            image: null
-        },
-        {
-            id: 3,
-            name: "Logitech MX Master 3S",
-            brand: "Logitech",
-            category: "Accessories",
-            price: 14500,
-            stock: 30,
-            status: "In Stock",
-            image: null
-        },
-        {
-            id: 4,
-            name: "Samsung 27-inch IPS Monitor",
-            brand: "Samsung",
-            category: "Monitors",
-            price: 32000,
-            stock: 15,
-            status: "In Stock",
-            image: null
-        }
-    ])
+    //const [products, setProducts] =
+    const products = useProductStore((state) => state.products)
+
+    const addProduct = useProductStore((state) => state.addProduct)
+
+    const updateProduct = useProductStore(
+        (state) => state.updateProduct
+    )
+
+    const deleteProduct = useProductStore(
+        (state) => state.deleteProduct
+    )
 
     const filteredProducts = products.filter((product) => {
         const matchesSearch = 
@@ -79,10 +50,22 @@ function AdminProducts() {
         }
 
         if (stock <= 5) {
-            return "bg-yello-100 text-yellow-700"
+            return "bg-yellow-100 text-yellow-700"
         }
 
         return "bg-green-100 text-green-700"
+    }
+
+    const getStockStatus = (stock) => {
+        if (stock === 0) {
+            return "Out of Stock"
+        }
+
+        if (stock <= 5) {
+            return "Low Stock"
+        }
+
+        return "In Stock"
     }
 
     return (
@@ -103,7 +86,7 @@ function AdminProducts() {
                 </div>
                 <button
                     onClick={() => setAddingProduct(true)}
-                    className="flex items-center justiyfy-center gap-2 px-5 py-3 bg-blue-600 text-white rounded-xl font-semibold hover:bg-blue-700 transition"
+                    className="flex items-center justify-center gap-2 px-5 py-3 bg-blue-600 text-white rounded-xl font-semibold hover:bg-blue-700 transition"
                 >
                     <FiPlus />
                     Add Product
@@ -113,8 +96,6 @@ function AdminProducts() {
             {/* Filters */}
             <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 mb-6">
                 <div className="flex flex-col lg:flex-row gap-4 lg:items-center lg:justify-between">
-
-                    {/* Search */}
                     <div className="relative w-full lg:max-w-md">
                         <FiSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
                         <input
@@ -125,8 +106,6 @@ function AdminProducts() {
                             className="w-full pl-11 pr-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
                         />
                     </div>
-
-                    {/* Category Filter */}
                     <div className="flex items-center gap-3">
                         <FiFilter className="text-slate-500" />
                         <select
@@ -153,8 +132,6 @@ function AdminProducts() {
 
             {/* Products Table */}
             <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-
-                {/* Table Header */}
                 <div className="px-6 py-5 border-b border-slate-200">
                     <h2 className="text-lg font-bold text-slate-900">
                         All Products
@@ -197,7 +174,7 @@ function AdminProducts() {
                                     {/* Product */}
                                     <td className="px-6 py-5">
                                         <div className="flex items-center gap-4">
-                                            <div className="w-14 h-14 rounded-xl bg-slate-100 flex itemscenter justify-center overflow-hidden">
+                                            <div className="w-14 h-14 rounded-xl bg-slate-100 flex items-center justify-center overflow-hidden">
                                                 {product.image ? (
                                                     <img
                                                         src={product.image}
@@ -218,33 +195,22 @@ function AdminProducts() {
                                             </div>
                                         </div>
                                     </td>
-
-                                    {/* Category */}
                                     <td className="px-6 py-5 text-slate-600">
                                         {product.category}
                                     </td>
-
-                                    {/* Price */}
                                     <td className="px-6 py-5 font-semibold text-slate-900 whitespace-nowrap">
                                         Kshs. {product.price.toLocaleString()}
                                     </td>
-
-                                    {/* Stock */}
                                     <td className="px-6 py-5 text-slate-700">
-                                        {product.stock}
+                                        {product.stock} units
                                     </td>
-
-                                    {/* Status */}
                                     <td className="px-6 py-5">
                                         <span
-                                            className={`px-3 py-1 rounded-full text-xs font-semibold ${getStockStyle(product.stock)}`}
+                                            className={`px-3 py-1 rounded-full text-xs font-semibold ${getStockStyle(
+                                                product.stock
+                                            )}`}
                                         >
-                                            {product.stock === 0
-                                                ? "Out of Stock"
-                                                : product.stock <= 5
-                                                    ? "Low Stock"
-                                                    : "In Stock"
-                                            }
+                                            {getStockStatus(product.stock)}
                                         </span>
                                     </td>
 
@@ -254,7 +220,7 @@ function AdminProducts() {
                                             <button
                                                 onClick={() => setSelectedProduct(product)}
                                                 className="w-9 h-9 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center hover:bg-blue-100 transition"
-                                                arial-label={`View ${product.name}`}
+                                                aria-label={`View ${product.name}`}
                                             >
                                                 <FiEye />
                                             </button>
@@ -268,7 +234,7 @@ function AdminProducts() {
                                             <button
                                                 onClick={() => setDeletingProduct(product)}
                                                 className="w-9 h-9 rounded-lg bg-red-50 text-red-600 flex items-center justify-center hover:bg-red-100 transition"
-                                                arial-label={`Delet ${product.name}`}
+                                                aria-label={`Delet ${product.name}`}
                                             >
                                                 <FiTrash2 />
                                             </button>
@@ -277,7 +243,7 @@ function AdminProducts() {
                                 </tr>
                             ))}
 
-                            {filteredProducts.legth === 0 && (
+                            {filteredProducts.length === 0 && (
                                 <tr>
                                     <td
                                         colSpan="6"
@@ -303,10 +269,8 @@ function AdminProducts() {
                     />
 
                     {/* Modal */}
-                    <div className="relative bg-white w-full max-w-2xl max-h-[90vh] overflow-y-auto round-2xl">
-
-                        {/* Header */}
-                        <div className="sticky top-0 bg-white border-b border-b border-slate-200 px-6 py-6 flex items-center justify-between z-10">
+                    <div className="relative bg-white w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl">
+                        <div className="sticky top-0 bg-white border-b border-slate-200 px-6 py-6 flex items-center justify-between z-10">
                             <div>
                                 <p className="text-sm text-slate-500">
                                     Product Details
@@ -323,11 +287,7 @@ function AdminProducts() {
                                 <FiX className="text-xl" />
                             </button>
                         </div>
-
-                        {/* Content */}
                         <div className="p-6 space-y-6">
-
-                            {/* Product Image */}
                             <div className="flex justify-center">
                                 <div className="w-48 h-48 rounded-2xl bg-slate-100 flex items-center justify-center overflow-hidden">
                                     {selectedProduct.image ? (
@@ -341,8 +301,6 @@ function AdminProducts() {
                                     )}
                                 </div>
                             </div>
-
-                            {/* Basic Information */}
                             <div>
                                 <h3 className="text-lg font-bold text-slate-900 mb-4">
                                     Product Information
@@ -380,7 +338,7 @@ function AdminProducts() {
                                             Kshs. {Number(selectedProduct.price).toLocaleString()}
                                         </p>
                                     </div>
-                                    <div className="bg-slayte-50 rounded-xl p-4">
+                                    <div className="bg-slate-50 rounded-xl p-4">
                                         <p className="text-xs text-slate-500">
                                             Stock
                                         </p>
@@ -449,13 +407,7 @@ function AdminProducts() {
                             onSubmit={(e) => {
                                 e.preventDefault()
 
-                                setProducts((currentProducts) =>
-                                    currentProducts.map((product) =>
-                                        product.id === editingProduct.id
-                                            ? editingProduct
-                                            : product
-                                    )
-                                )
+                                updateProduct(editingProduct)
 
                                 setEditingProduct(null)
                             }}
@@ -517,7 +469,7 @@ function AdminProducts() {
                                         <option value="Laptops">Laptops</option>
                                         <option value="Desktop Computers">Desktop Computers</option>
                                         <option value="Storage Devices">Storage Devices</option>
-                                        <option value="Networking Equipments">Networking Equipments</option>
+                                        <option value="Networking Equipment">Networking Equipment</option>
                                         <option value="Printers & Scanners">Printers & Scanners</option>
                                         <option value="Accessories">Accessories</option>
                                         <option value="Monitors">Monitors</option>
@@ -625,20 +577,15 @@ function AdminProducts() {
 
                                 const formData = new FormData(e.currentTarget)
                                 const newProduct = {
-                                    id: Date.now(),
                                     name: formData.get("name"),
                                     brand: formData.get("brand"),
                                     category: formData.get("category"),
                                     price: Number(formData.get("price")),
                                     stock: Number(formData.get("stock")),
-                                    status: "In Stock",
                                     image: null
                                 }
-
-                                setProducts((currentProducts) => [
-                                    ...currentProducts,
-                                    newProduct
-                                ])
+                                
+                                addProduct(newProduct)
 
                                 setAddingProduct(false)
                             }}
@@ -667,7 +614,7 @@ function AdminProducts() {
                                     </label>
                                     <input
                                         type="text"
-                                        name="name"
+                                        name="brand"
                                         placeholder="e.g. Lenovo"
                                         className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
                                         required
@@ -704,7 +651,7 @@ function AdminProducts() {
                                         name="price"
                                         placeholder="e.g. 75000"
                                         min="0"
-                                        className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none fpcus:ring-2 focus:ring-blue-500"
+                                        className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
                                         required
                                     />
                                 </div>
@@ -782,16 +729,12 @@ function AdminProducts() {
                             <button
                                 type="button"
                                 onClick={() => {
-                                    setProducts((currentProducts) =>
-                                        currentProducts.filter(
-                                            (product) =>
-                                                product.id !== deletingProduct.id
-                                        )
-                                    )
+
+                                    deleteProduct(deletingProduct.id)
 
                                     setDeletingProduct(null)
                                 }}
-                                className="px-5 py-3 rounded-xl bg-red-600 text-white font-semibold hover:bgred-700 transition"
+                                className="px-5 py-3 rounded-xl bg-red-600 text-white font-semibold hover:bg-red-700 transition"
                             >
                                 Delete Product
                             </button>
