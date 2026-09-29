@@ -6,7 +6,8 @@ import {
     FiTrash2,
     FiFilter,
     FiPackage,
-    FiX
+    FiX,
+    FiPlus
 } from "react-icons/fi"
 
 function AdminProducts() {
@@ -14,6 +15,8 @@ function AdminProducts() {
     const [categoryFilter, setCategoryFilter] = useState("All")
     const [selectedProduct, setSelectedProduct] = useState(null)
     const [editingProduct, setEditingProduct] = useState(null)
+    const [addingProduct, setAddingProduct] = useState(false)
+    const [deletingProduct, setDeletingProduct] = useState(null)
 
     const [products, setProducts] = useState([
         {
@@ -86,16 +89,25 @@ function AdminProducts() {
         <div className="p-6 lg:p-8">
 
             {/* Page Header */}
-            <div className="mb-8">
-                <p className="text-blue-600  font-semibold text-sm">
-                    MANAGEMENT
-                </p>
-                <h1 className="text-3xl font-bold text-slate-900 mt-1">
-                    Products
-                </h1>
-                <p className="text-slate-500 mt-2">
-                    Manage products in your store.
-                </p>
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div>
+                    <p className="text-blue-600  font-semibold text-sm">
+                        MANAGEMENT
+                    </p>
+                    <h1 className="text-3xl font-bold text-slate-900 mt-1">
+                        Products
+                    </h1>
+                    <p className="text-slate-500 mt-2">
+                        Manage products in your store.
+                    </p>
+                </div>
+                <button
+                    onClick={() => setAddingProduct(true)}
+                    className="flex items-center justiyfy-center gap-2 px-5 py-3 bg-blue-600 text-white rounded-xl font-semibold hover:bg-blue-700 transition"
+                >
+                    <FiPlus />
+                    Add Product
+                </button>
             </div>
 
             {/* Filters */}
@@ -254,6 +266,7 @@ function AdminProducts() {
                                                 <FiEdit />
                                             </button>
                                             <button
+                                                onClick={() => setDeletingProduct(product)}
                                                 className="w-9 h-9 rounded-lg bg-red-50 text-red-600 flex items-center justify-center hover:bg-red-100 transition"
                                                 arial-label={`Delet ${product.name}`}
                                             >
@@ -279,7 +292,7 @@ function AdminProducts() {
                 </div>
             </div>
 
-            {/* View Product */}
+            {/* View Products */}
             {selectedProduct && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
 
@@ -399,7 +412,7 @@ function AdminProducts() {
                 </div>
             )}
 
-            {/* Edit Product */}
+            {/* Edit Products */}
             {editingProduct && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
 
@@ -569,6 +582,220 @@ function AdminProducts() {
                                 </button>
                             </div>
                         </form>
+                    </div>
+                </div>
+            )}
+
+            {/* Add Product */}
+            {addingProduct && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+
+                    {/* Overlay */}
+                    <div
+                        className="absolute inset-0 bg-black/50"
+                        onClick={() => setAddingProduct(false)}
+                    />
+
+                    {/* Modal */}
+                    <div className="relative bg-white w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl shadow-2xl">
+
+                        {/* Header */}
+                        <div className="sticky top-0 bg-white border-b border-slate-200 px-6 py-5 flex items-center justify-between z-10">
+                            <div>
+                                <p className="text-sm text-slate-500">
+                                    Product Management
+                                </p>
+                                <h2 className="text-xl sm:text-2xl font-bold text-slate-900 mt-1">
+                                    Add Product
+                                </h2>
+                            </div>
+                            <button
+                                onClick={() => setAddingProduct(false)}
+                                className="w-10 h-10 rounded-xl bg-slate-100 text-slate-600 flex items-center justify-center hover:bg-slate-200 transition"
+                                aria-label="Close add product"
+                            >
+                                <FiX className="text-xl" />
+                            </button>
+                        </div>
+
+                        {/* Form */}
+                        <form
+                            onSubmit={(e) => {
+                                e.preventDefault()
+
+                                const formData = new FormData(e.currentTarget)
+                                const newProduct = {
+                                    id: Date.now(),
+                                    name: formData.get("name"),
+                                    brand: formData.get("brand"),
+                                    category: formData.get("category"),
+                                    price: Number(formData.get("price")),
+                                    stock: Number(formData.get("stock")),
+                                    status: "In Stock",
+                                    image: null
+                                }
+
+                                setProducts((currentProducts) => [
+                                    ...currentProducts,
+                                    newProduct
+                                ])
+
+                                setAddingProduct(false)
+                            }}
+                            className="p-6 space-y-6"
+                        >
+
+                            {/* Product Name */}
+                            <div>
+                                <label className="block text-sm font-semibold text-slate-700 mb-2">
+                                    Product Name
+                                </label>
+                                <input
+                                    type="text"
+                                    name="name"
+                                    placeholder="e.g. Lenovo ThinkPad T14"
+                                    className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    required
+                                />
+                            </div>
+
+                            {/* Brand & Category */}
+                            <div className="grid sm:grid-cols-2 gap-4">
+                                <div>
+                                    <label className="blokck text-sm font-semibold text-slate-700 mb-2">
+                                        Brand
+                                    </label>
+                                    <input
+                                        type="text"
+                                        name="name"
+                                        placeholder="e.g. Lenovo"
+                                        className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        required
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-semibold text-slate-700 mb-2">
+                                        Category
+                                    </label>
+                                    <select
+                                        name="category"
+                                        defaultValue="Laptops"
+                                        className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        >
+                                            <option value="Laptops">Laptops</option>
+                                            <option value="Desktop Computers">Desktop Computers</option>
+                                            <option value="Storage Devices">Storage Devices</option>
+                                            <option value="Networking Equipment">Networking Equipment</option>
+                                            <option value="Printers & Scanners">Printers & Scanners</option>
+                                            <option value="Accessories">Accessories</option>
+                                            <option value="Monitors">Monitors</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            {/* Price & Stock */}
+                            <div className="grid sm:grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-sm font-semibold text-slate-700 mb-2">
+                                        Price
+                                    </label>
+                                    <input
+                                        type="number"
+                                        name="price"
+                                        placeholder="e.g. 75000"
+                                        min="0"
+                                        className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none fpcus:ring-2 focus:ring-blue-500"
+                                        required
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-semibold text-slate-700 mb-2">
+                                        Stock
+                                    </label>
+                                    <input
+                                        type="number"
+                                        name="stock"
+                                        placeholder="e.g. 10"
+                                        min="0"
+                                        className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        required
+                                    />
+                                </div>
+                            </div>
+
+                            {/* Actions */}
+                            <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-3 pt-4 border-slate-200">
+                                <button
+                                    type="button"
+                                    onClick={() => setAddingProduct(false)}
+                                    className="px-5 py-3 rounded-xl border border-slate-200 text-slate-700 font-semibold hover:bg-slate-50 transition"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="submit"
+                                    className="px-5 py-3 rounded-xl bg-blue-600 text-white font-semibold hover:bg-blue-700 transitio"
+                                >
+                                    Add Product
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+
+            {/* Delete Products */}
+            {deletingProduct && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+
+                    {/* Overlay */}
+                    <div
+                        className="absolute inset-0 bg-black/50"
+                        onClick={() => setDeletingProduct(null)}
+                    />
+
+                    {/* Modal */}
+                    <div className="relative bg-white w-full max-w-md rounded-2xl shadow-2xl p-6">
+                        <div className="w-14 h-14 rounded-full bg-red-100 text-red-600 flex items-center justify-center mb-5">
+                            <FiTrash2 className="text-2xl" />
+                        </div>
+                        <h2 className="text-xl font-bold text-slate-900">
+                            Delete Product?
+                        </h2>
+                        <p className="text-slate-500 mt-2 leading-relaxed">
+                            Are you sure you want to delete{" "}
+                            <span className="font-semibold text-slate-700">
+                                {deletingProduct.name}
+                            </span>
+                            ? This action cannot be undone.
+                        </p>
+
+                        {/* Actions */}
+                        <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-3 mt-7">
+                            <button
+                                type="button"
+                                onClick={() => setDeletingProduct(null)}
+                                className="px-5 py-3 rounded-xl border border-slate-200 text-slate-700 font-semibold hover:bg-slate-50 transition"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setProducts((currentProducts) =>
+                                        currentProducts.filter(
+                                            (product) =>
+                                                product.id !== deletingProduct.id
+                                        )
+                                    )
+
+                                    setDeletingProduct(null)
+                                }}
+                                className="px-5 py-3 rounded-xl bg-red-600 text-white font-semibold hover:bgred-700 transition"
+                            >
+                                Delete Product
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}
