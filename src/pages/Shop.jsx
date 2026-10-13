@@ -2,11 +2,13 @@ import { useState } from "react"
 import { useSearchParams } from "react-router-dom"
 import { FiX } from "react-icons/fi"
 import ProductCard from "../components/product/ProductCard"
-import { products } from "../data/products"
 import Rating from "../components/product/Rating"
+import useProductStore from "../store/productStore"
 
 function Shop() {
-    const [searchParams] = useSearchParams()
+    const products = useProductStore((state) => state.products)
+
+    const [searchParams, setSearchParams] = useSearchParams()
 
     const categoryFromUrl = searchParams.get("category")
 
@@ -31,7 +33,7 @@ function Shop() {
     const filteredProducts = products.filter((product) => {
         const matchesSearch =
             product.name.toLowerCase().includes(search.toLowerCase()) ||
-            product.name.toLowerCase().includes(search.toLowerCase()) ||
+            product.brand.toLowerCase().includes(search.toLowerCase()) ||
             product.category.toLowerCase().includes(search.toLowerCase())
 
         const matchesCategory =
@@ -44,7 +46,9 @@ function Shop() {
 
         const matchesPrice = product.price <= maxPrice
 
-        const matchesRating = product.rating >= minimumRating
+        const matchesRating = 
+            minimumRating === 0 ||
+            (product.rating || 0) >= minimumRating
 
         return matchesSearch && matchesCategory && matchesBrand && matchesPrice && matchesRating
     })
@@ -132,9 +136,15 @@ function Shop() {
                                         onClick={() => {
                                             setSelectedCategory(category)
                                             setSearch("")
+
+                                            if (category === "All") {
+                                                setSearchParams({})
+                                            } else {
+                                                setSearchParams({ category })
+                                            }
                                         }}
                                         className={`w-full text-left px-4 py-3 rounded-xl transition ${
-                                            selectedCategory === category
+                                            activeCategory === category
                                                 ? "bg-blue-600 text-white"
                                                 : "hover:bg-slate-100"
                                         }`}
@@ -237,6 +247,7 @@ function Shop() {
                                     setSelectedBrands([])
                                     setMaxPrice(highestPrice)
                                     setMinimumRating(0)
+                                    setSearchParams({})
                                 }}
                                 className="w-full border border-red-500 text-red-500 py-3 rounded-xl hover:bg-red-500 hover:text-white transition"
                             >
@@ -258,7 +269,7 @@ function Shop() {
                             <h3 className="text-sm font-semibold text-slate-500 mb-3">
                                 Active Filters
                             </h3>
-                            {selectedCategory !== "All" & (
+                            {selectedCategory !== "All" && (
                                 <button
                                     onClick={() => setSelectedCategory("All")}
                                     className="px-3 py-1.5 bg-blue-100 text-blue-700 rounded-full text-sm hover:bg-blue-200 transition"
@@ -322,7 +333,7 @@ function Shop() {
                             <h2 className="text-2xl font-bold">
                                 No products found
                             </h2>
-                            <p className="txt-slate-500 mt-3">
+                            <p className="text-slate-500 mt-3">
                                 Try changing your search or filters.
                             </p>
                         </div>

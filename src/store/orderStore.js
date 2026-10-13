@@ -40,7 +40,7 @@ const useOrderStore = create(
 
             clearOrders: () =>
                 set({
-                    order: [],
+                    orders: [],
                     currentOrder: null
                 }),
 

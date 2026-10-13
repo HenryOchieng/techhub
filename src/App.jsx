@@ -11,8 +11,6 @@ import Categories from "./pages/Categories"
 import Deals from "./pages/Deals"
 import About from "./pages/About"
 import Contact from "./pages/Contact"
-//import CartDrawer from "./components/cart/CartDrawer"
-//import useUIStore from "./store/uiStore";
 import ProductDetails from "./pages/ProductDetails"
 import Checkout from "./pages/Checkout"
 import Payment from "./pages/Payment"
@@ -42,7 +40,7 @@ function App() {
           <Route path="/about" element={<About />}/>
           <Route path="/contact" element={<Contact />}/>
 
-          <Route path="/product:id" element={<ProductDetails />}/>
+          <Route path="/product/:id" element={<ProductDetails />}/>
 
           <Route path="/checkout" element={<Checkout />}/>
           <Route path="/payment" element={<Payment />}/>

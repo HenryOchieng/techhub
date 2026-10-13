@@ -19,7 +19,6 @@ function AdminProducts() {
     const [addingProduct, setAddingProduct] = useState(false)
     const [deletingProduct, setDeletingProduct] = useState(null)
 
-    //const [products, setProducts] =
     const products = useProductStore((state) => state.products)
 
     const addProduct = useProductStore((state) => state.addProduct)
@@ -582,6 +581,8 @@ function AdminProducts() {
                                     category: formData.get("category"),
                                     price: Number(formData.get("price")),
                                     stock: Number(formData.get("stock")),
+                                    rating: 0,
+                                    reviews: [],
                                     image: null
                                 }
                                 

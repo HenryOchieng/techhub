@@ -19,18 +19,25 @@ function ProductCard({ product }) {
                 ((product.oldPrice - product.price) / product.oldPrice) * 100
             ) : 0
 
+    const reviewCount = Array.isArray(product.reviews)
+            ? product.reviews.length
+            : Number(product.reviews || 0)
+
     return (
         <div className="bg-white rounded-2xl overflow-hidden shadow hover:shadow-xl transition duration-300 group ">
-            <div className="relative overflow-hidden">
-                <Link to={`/product/${product.id}`}>
+            <div className="relative w-full h-48 sm:h-56 md:h-60 overflow-hidden bg-white">
+                <Link 
+                    to={`/product/${product.id}`}
+                    className="flex w-full h-full items-center justify-center"
+                >
                     <img
-                        src={product.image}
+                        src={product.image || product.image?.[0]}
                         alt={product.name}
-                        className="h-60 w-full object-cover group-hover:scale-105 transition duration-500" 
+                        className="block w-full h-full object-contain transition-transform duration-500 group-hover:scale-105" 
                     />
                 </Link>
-                {product.oldPrice && product.oldPrice > product.price && (
-                    <span className="absolute top-4 left-4 bg-red-500 text-white px-3 py-1 rounded-full text-sm font-semibold">
+                {product.oldPrice != null && product.oldPrice > product.price && (
+                    <span className="absolute top-3 left-4 z-10 bg-red-500 text-white px-3 py-1 rounded-full text-sm font-semibold">
                         {discountPercentage}% OFF
                     </span>
                 )}
@@ -46,8 +53,8 @@ function ProductCard({ product }) {
                     </h3>
                 </Link>
                 <Rating
-                    rating={product.rating}
-                    reviews={product.reviews.length}
+                    rating={Number(product.rating) || 0}
+                    reviews={reviewCount}
                     size={14}
                 />
                 <div className="mt-4">

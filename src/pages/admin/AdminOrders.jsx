@@ -6,134 +6,25 @@ import {
     FiX,
     FiPackage
 } from "react-icons/fi"
+import useOrderStore from "../../store/orderStore"
 
 function AdminOrders() {
     const [search, setSearch] = useState("")
     const [statusFilter, setStatusFilter] = useState("All")
     const [selectedOrder, setSelectedOrder] = useState(null)
 
-    const orders = [
-        {
-            id: "TH-1001",
-            customer: "John Doe",
-            date: "14 Sep 2026",
-            items: [
-                {
-                    id: 1,
-                    name: "HP EliteBook 840 G8",
-                    quantity: 1,
-                    price: 89000,
-                    image: null
-                },
-                {
-                    id: 2,
-                    name: "Logitech MX Master 3S",
-                    quantity: 1,
-                    price: 14500,
-                    image: null
-                }
-            ],
-            total: 98000,
-            paymentMethod: "M-Pesa",
-            paymentStatus: "Paid",
-            status: "Pending"
-        },
-        {
-            id: "TH-1000",
-            customer: "Jane Smith",
-            date: "13 Sep 2026",
-            items: [
-                {
-                    id: 3,
-                    name: "Dell Latitude 7420",
-                    quantity: 1,
-                    price: 98000,
-                    image: null
-                },
-                {
-                    id: 4,
-                    name: "Logitech MX Master 3S",
-                    quantity: 2,
-                    price: 14500,
-                    image: null
-                }
-            ],
-            total: "127000",
-            paymentMethod: "Credit/Debit Card",
-            paymentStatus: "Paid",
-            status: "Processing"
-        },
-        {
-            id: "TH-999",
-            customer: "Peter Otieno",
-            date: "12 Sep 2026",
-            items: [
-                {
-                    id: 5,
-                    name: "Samsung 27-inch IPS Monitor",
-                    quantity: 1,
-                    price: 32000,
-                    image: null
-                }
-            ],
-            total: 32000,
-            paymentMethod: "Cash On Delivery",
-            paymentStatus: "Pending",
-            status: "Pending"
-        },
-        {
-            id: "TH-998",
-            customer: "Mary Achieng",
-            date: "11 Sep 2026",
-            items: [
-                {
-                    id: 6,
-                    name: "HP EliteBook 840 G8",
-                    quantity: 2,
-                    price: 8900,
-                    image: null
-                },
-                {
-                    id: 7,
-                    name: "Logitech MX Master 3S",
-                    quantity: 2,
-                    price: 14500,
-                    image: null
-                }
-            ],
-            total: 207000,
-            paymentMethod: "M-Pesa",
-            paymentStatus: "Paid",
-            status: "Completed"
-        },
-        {
-            id: "TH-997",
-            customer: "David Jacobs",
-            date: "10 Sep 2026",
-            items: [
-                {
-                    id: 8,
-                    name: "Dell Latitude 7420",
-                    quantity: 1,
-                    price: 98000,
-                    image: null
-                }
-            ],
-            total: 98000,
-            paymentMethod: "M-Pesa",
-            paymentStatus: "Paid",
-            status: "Cancelled"
-        }
-    ]
+    const orders = useOrderStore((state) => state.orders)
 
     const filteredOrders = orders.filter((order) => {
+        const orderId = String(order.id ?? order.orderNumber ?? "")
+        const customer = String(order.customerName ?? order.customer ?? `${order.shippingDetails?.firstName ?? ""} ${order.shippingDetails?.lastName ?? ""}`.trim())
+        const searchTerm = String(search ?? "").toLowerCase()
         const matchesSearch =
-          order.id.toLowerCase().includes(search.toLowerCase()) ||
-          order.customer.toLowerCase().includes(search.toLowerCase())
-          
-        const matchesStatus = 
-            statusFilter === "All" ||
-            order.status === statusFilter
+            orderId.toLowerCase().includes(searchTerm) ||
+            customer.toLowerCase().includes(searchTerm)
+
+        const matchesStatus =
+            statusFilter === "All" || order.status === statusFilter
 
         return matchesSearch && matchesStatus
     })
@@ -253,51 +144,72 @@ function AdminOrders() {
                                 </th>
                             </tr>
                         </thead>
-                            <tbody className="divide-y divide-slate-100">
-                            {filteredOrders.map((order) => (
-                                <tr
-                                    key={order.id}
-                                    className="hover:bg-slate-50 transition"
-                                >
-                                    <td className="px-6 py-5 font-semibold text-slate-900">
-                                        #{order.id}
-                                    </td>
-                                    <td className="px-6 py-5 text-slate-700">
-                                        {order.customer}
-                                    </td>
-                                    <td className="px-6 py-5 text-slate-500">
-                                        {order.date}
-                                    </td>
-                                    <td className="px-6 py-5 text-slate-700">
-                                        {order.items.reduce(
-                                            (total, item) => total + item.quantity,
-                                            0
-                                        )}
-                                    </td>
-                                    <td className="px-6 py-5 font-semibold text-slate-900 whitespace-nowrap">
-                                        Kshs. {Number(order.total).toLocaleString()}
-                                    </td>
-                                    <td className="px-6 py-5">
-                                        <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getPaymentStyle(order.paymentStatus)}`}>
-                                            {order.paymentStatus}
-                                        </span>
-                                    </td>
-                                    <td className="px-6 py-5">
-                                        <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getStatusStyle(order.status)}`}>
-                                            {order.status}
-                                        </span>
-                                    </td>
-                                    <td className="px-6 py-5">
-                                        <button
-                                            onClick={() => setSelectedOrder(order)}
-                                            className="w-9 h-9 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center hover:bg-blue-100 transition"
-                                            aria-label={`View order ${order.id}`}
-                                        >
-                                            <FiEye />
-                                        </button>
-                                    </td>
-                                </tr>
-                            ))}
+                        <tbody className="divide-y divide-slate-100">
+                            {filteredOrders.map((order, index) => {
+                                const orderDate =
+                                    order.orderDate ??
+                                    order.createdAt ??
+                                    order.date
+                                const formattedDate = orderDate
+                                    ? new Date(orderDate).toLocaleDateString()
+                                    : "N/A"
+                                const customerName =
+                                    (
+                                        order.customerNamer ??
+                                        order.customer ??
+                                        `${order.shippingDetails?.firstName ?? ""} ${order.shippingDetails?.lastName ?? ""}`.trim()
+                                    ) || "N/A"
+                            
+                                return(
+                                    <tr
+                                        key={order.id ?? order.orderNumber ?? index}
+                                        className="hover:bg-slate-50 transition"
+                                    >
+                                        <td className="px-6 py-5 font-semibold text-slate-900">
+                                            #{order.orderNumber ?? order.id ?? "N/A"}
+                                        </td>
+                                        <td className="px-6 py-5 text-slate-700">
+                                            {customerName}
+                                        </td>
+                                        {/*<td className="px-6 py-5 text-slate-500">
+                                            {new Date(
+                                                order.orderDate ?? order.createdAt ?? order.date
+                                            ).toLocaleDateString()}
+                                        </td>*/}
+                                        <td className="px-6 py-5 text-slate-700">
+                                            {formattedDate}
+                                        </td>
+                                        <td className="px-6 py-5 text-slate-700">
+                                            {order.items.reduce(
+                                                (total, item) => total + item.quantity,
+                                                0
+                                            )}
+                                        </td>
+                                        <td className="px-6 py-5 font-semibold text-slate-900 whitespace-nowrap">
+                                            Kshs. {Number(order.total).toLocaleString()}
+                                        </td>
+                                        <td className="px-6 py-5">
+                                            <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getPaymentStyle(order.paymentStatus)}`}>
+                                                {order.paymentStatus}
+                                            </span>
+                                        </td>
+                                        <td className="px-6 py-5">
+                                            <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getStatusStyle(order.status)}`}>
+                                                {order.status}
+                                            </span>
+                                        </td>
+                                        <td className="px-6 py-5">
+                                            <button
+                                                onClick={() => setSelectedOrder(order)}
+                                                className="w-9 h-9 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center hover:bg-blue-100 transition"
+                                                aria-label={`View order ${order.id}`}
+                                            >
+                                                <FiEye />
+                                            </button>
+                                        </td>
+                                    </tr>
+                                )
+                            })}
                             {filteredOrders.length === 0 && (
                                 <tr>
                                     <td

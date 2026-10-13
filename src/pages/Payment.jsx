@@ -82,7 +82,7 @@ function Payment() {
         setMpesaNumber("processing")
 
         try {
-            // Temporary simulation. This will later call the backend M-Pesa endpoint
+            // Temporary simulation.
             await new Promise((resolve) =>
                 setTimeout(resolve, 2000)
             )
@@ -110,7 +110,12 @@ function Payment() {
             }`
 
         const order = {
+            id: orderNumber,
             orderNumber,
+            customer: `${shippingDetails.firstName ?? ""} ${shippingDetails.lastName ?? ""}`.trim(),
+            customerName: `${shippingDetails.firstName ?? ""} ${shippingDetails.lastName ?? ""}`.trim(),
+            email: shippingDetails.email ?? "",
+            phone: shippingDetails.phone ?? "",
             items: cart,
             shippingDetails,
             paymentMethod,
@@ -122,8 +127,13 @@ function Payment() {
             shipping,
             total,
             status: "Pending",
-            paymentStatus: "Pending",
-            orderDate: new Date().toISOString()
+            paymentStatus:
+                paymentMethod === "Cash On Delivery"
+                    ? "Pending"
+                    : "Pending",
+            date: new Date().toISOString(),
+            orderDate: new Date().toISOString(),
+            createdAt: new Date().toISOString()
         }
 
         createOrder(order)

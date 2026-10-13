@@ -1,10 +1,11 @@
 import { motion } from "framer-motion"
 import { FiArrowRight } from "react-icons/fi"
 import { Link } from "react-router-dom"
+import heroImage from "../../assets/images/hero-laptop.jpg"
 
 function Hero() {
     return (
-        <section className="bg-slate-50 min-h[85vh] flex items-center">
+        <section className="bg-slate-50 min-h-[85vh] flex items-center">
             <div className="max-w-7xl mx-auto px-6 grid lg:grid-cols-2 gap-16 items-center">
 
                 {/* Left Section */}
@@ -58,9 +59,9 @@ function Hero() {
                     transition={{ duration: .8}}
                 >
                     <img
-                        src="/src/assets/images/hero-laptop.jpg"
+                        src={heroImage}
                         alt="Laptop"
-                        className="rounded-3xl shadow-2xl"
+                        className="block w-full h-auto rounded-3xl shadow-2xl"
                     />
 
                 </motion.div>
