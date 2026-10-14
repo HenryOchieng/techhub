@@ -82,7 +82,7 @@ function Payment() {
         setMpesaNumber("processing")
 
         try {
-            // Temporary simulation.
+            
             await new Promise((resolve) =>
                 setTimeout(resolve, 2000)
             )
@@ -109,6 +109,8 @@ function Payment() {
                 .slice(-6)
             }`
 
+        const isCashOnDelivery = paymentMethod === "Cash On Delivery"
+
         const order = {
             id: orderNumber,
             orderNumber,
@@ -126,15 +128,16 @@ function Payment() {
             subtotal,
             shipping,
             total,
-            status: "Pending",
-            paymentStatus:
-                paymentMethod === "Cash On Delivery"
-                    ? "Pending"
-                    : "Pending",
+            //status: "Pending",
+            status: isCashOnDelivery ? "Delivered" : "Pending",
+            paymentStatus: isCashOnDelivery ? "Paid" : "Pending",
             date: new Date().toISOString(),
             orderDate: new Date().toISOString(),
             createdAt: new Date().toISOString()
         }
+
+        console.log("Selected payment method:", paymentMethod)
+        console.log("Order being saved:", order)
 
         createOrder(order)
 

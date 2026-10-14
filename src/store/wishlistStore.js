@@ -25,7 +25,13 @@ const useWishlistStore = create(
                             product
                         ]
                     }
-                })
+                }),
+            removeFromWishlist: (productId) =>
+                set((state) => ({
+                    wishlist: state.wishlist.filter(
+                        (item) => item.id !== productId
+                    )
+                }))
         }),
         {
             name: "wishlist-storage"

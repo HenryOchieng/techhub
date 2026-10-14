@@ -6,125 +6,70 @@ import {
     FiArrowUp,
     FiArrowDown
 } from "react-icons/fi"
+import useOrderStore from "../../store/orderStore"
 
 function AdminDashboard() {
+    const orders = useOrderStore((state) => state.orders)
 
-    // Temporary frontend data
-    const orders = [
-        {
-            id: "TH-1001",
-            customer: "John Doe",
-            total: 98000,
-            status: "Pending"
-        },
-        {
-            id: "TH-1000",
-            customer: "Jane Smith",
-            total: 145000,
-            status: "Processing"
-        },
-        {
-            id: "TH-999",
-            customer: "Peter Otieno",
-            total: 32000,
-            status: "Pending"
-        },
-        {
-            id: "TH-998",
-            customer: "Mary Achieng",
-            total: 215000,
-            status: "Completed"
-        }
-    ]
+    const latestOrders = [...orders]
+        .sort((a, b) => {
+            const dateA = new Date(
+                a.orderDate ?? a.createdAt ?? a.date ?? 0
+            ).getTime()
 
-    const products = [
-        {
-            id: 1,
-            name: "HP EliteBook 840 G8",
-            stock: 12
-        },
-        {
-            id: 2,
-            name: "Dell Latitude 7420",
-            stock: 8
-        },
-        {
-            id: 3,
-            name: "Logitech MX Master 3S",
-            stock: 30
-        },
-        {
-            id: 4,
-            name: "Samsung 27-inch IPS Monitor",
-            stock: 15
-        }
-    ]
+            const dateB = new Date(
+                b.orderDate ?? b.createdAt ?? b.date ?? 0
+            ).getTime()
 
-    const customers = [
-        {
-            id: 1,
-            name: "John Doe"
-        },
-        {
-            id: 2,
-            name: "Jane Smith"
-        },
-        {
-            id: 3,
-            name: "Peter Otieno"
-        },
-        {
-            id: 4,
-            name: "Mary Achieng"
-        },
-        {
-            id: 5,
-            name: "David Ochieng"
-        }
-    ]
-
-    // Calculate dashboard statistics
-    const totalSales = orders.reduce(
-        (total, order) => total + order.total,
-        0
-    )
+            return dateB - dateA
+        })
+        .slice(0, 5)
 
     const totalOrders = orders.length
 
-    const totalCustomers = customers.length
+    const pendingOrders = orders.filter(
+        (order) => order.status === "Pending" 
+    ).length
 
-    const totalProducts = products.length
+    const completedOrders = orders.filter(
+        (order) => order.status === "Delivered"
+    ).length
+
+    const totalRevenue = orders
+        .filter((order) => order.paymentStatus === "Paid")
+        .reduce((total, order) => total + Number(order.total || 0), 0)
 
     const stats = [
         {
-            title: "Total Sales",
-            value: `Kshs. ${totalSales.toLocaleString()}`,
+            title: "Total Revenue",
+            value: `Kshs. ${totalRevenue.toLocaleString()}`,
             icon: FiDollarSign,
-            change: "+12.5%",
+            change: `${completedOrders} completed`,
             positive: true
         },
         {
             title: "Total Orders",
-            value: totalOrders,
+            value: totalOrders.toLocaleString(),
             icon: FiShoppingBag,
-            change: "+8.2%",
+            change: `${totalOrders} orders`,
             positive: true
         },
         {
-            title: "Customers",
-            value: totalCustomers,
+            title: "Pending Order",
+            value: pendingOrders.toLocaleString(),
             icon: FiUsers,
-            change: "+5.4%",
-            positive: true
+            change: `${pendingOrders} pending`,
+            positive: false
         },
         {
-            title: "Products",
-            value: totalProducts,
+            title: "Completed Orders",
+            value: completedOrders.toLocaleString(),
             icon: FiPackage,
-            change: "+2.1%",
+            change: `${completedOrders} completed`,
             positive: true
         }
     ]
+
 
     return (
         <div className="p-5 lg:p-8">
@@ -237,23 +182,25 @@ function AdminDashboard() {
 
                         <tbody className="divide-y divide-slate-100">
 
-                            {orders.map((order) => (
-
+                            {latestOrders.map((order) => (
                                 <tr
-                                    key={order.id}
+                                    key={order.orderNumber ?? order.id}
                                     className="hover:bg-slate-50 transition"
                                 >
 
                                     <td className="px-6 py-4 font-semibold text-slate-900">
-                                        {order.id}
+                                        {order.orderNumber ?? order.id}
                                     </td>
 
                                     <td className="px-6 py-4 text-slate-600">
-                                        {order.customer}
+                                        {order.customerName ??
+                                            order.customer ??
+                                            `${order.shippingDetails?.firstName ?? ""} ${order.shippingDetails?.lastName ?? ""}`.trim()
+                                        }
                                     </td>
 
                                     <td className="px-6 py-4 font-semibold text-slate-900">
-                                        Kshs. {order.total.toLocaleString()}
+                                        Kshs. {Number(order.total || 0).toLocaleString()}
                                     </td>
 
                                     <td className="px-6 py-4">

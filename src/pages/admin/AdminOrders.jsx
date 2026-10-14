@@ -7,6 +7,7 @@ import {
     FiPackage
 } from "react-icons/fi"
 import useOrderStore from "../../store/orderStore"
+import { formatKenyanDateTime } from "../../utils/formatDate"
 
 function AdminOrders() {
     const [search, setSearch] = useState("")
@@ -146,13 +147,6 @@ function AdminOrders() {
                         </thead>
                         <tbody className="divide-y divide-slate-100">
                             {filteredOrders.map((order, index) => {
-                                const orderDate =
-                                    order.orderDate ??
-                                    order.createdAt ??
-                                    order.date
-                                const formattedDate = orderDate
-                                    ? new Date(orderDate).toLocaleDateString()
-                                    : "N/A"
                                 const customerName =
                                     (
                                         order.customerNamer ??
@@ -171,17 +165,14 @@ function AdminOrders() {
                                         <td className="px-6 py-5 text-slate-700">
                                             {customerName}
                                         </td>
-                                        {/*<td className="px-6 py-5 text-slate-500">
-                                            {new Date(
-                                                order.orderDate ?? order.createdAt ?? order.date
-                                            ).toLocaleDateString()}
-                                        </td>*/}
                                         <td className="px-6 py-5 text-slate-700">
-                                            {formattedDate}
+                                            {formatKenyanDateTime(
+                                                order.orderDate ?? order.createdAt ?? order.date
+                                            )}
                                         </td>
                                         <td className="px-6 py-5 text-slate-700">
-                                            {order.items.reduce(
-                                                (total, item) => total + item.quantity,
+                                            {(order.items ?? []).reduce(
+                                                (total, item) => total + (Number(item.quantity) || 0),
                                                 0
                                             )}
                                         </td>
@@ -243,7 +234,7 @@ function AdminOrders() {
                                     Order Details
                                 </p>
                                 <h2 className="text-2xl font-bold text-slate-900">
-                                    #{selectedOrder.id}
+                                    #{selectedOrder.orderNumber ?? selectedOrder.id ?? "N/A"}
                                 </h2>
                             </div>
                             <button
@@ -269,7 +260,11 @@ function AdminOrders() {
                                             Order Date
                                         </p>
                                         <p className="font-semibold text-slate-900 mt-1">
-                                            {selectedOrder.date}
+                                            {formatKenyanDateTime(
+                                                selectedOrder.orderDate ??
+                                                selectedOrder.createdAt ??
+                                                selectedOrder.date
+                                            )}
                                         </p>
                                     </div>
                                     <div className="bg-slate-50 rounded-xl p-4">

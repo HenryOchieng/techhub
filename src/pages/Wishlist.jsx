@@ -14,6 +14,15 @@ function Wishlist() {
         (state) => state.addToCart
     )
 
+    const removeFromWishlist = useWishlistStore(
+        (state) => state.removeFromWishlist
+    )
+
+    const handleMoveToCart = (product) => {
+        addToCart(product)
+        removeFromWishlist(product.id)
+    }
+
     if (wishlist.length === 0) {
         return (
             <div className="min-h-[70vh] bg-slate-50 flex items-center justify-center px-6">
@@ -109,7 +118,7 @@ function Wishlist() {
                                         </button>
                                     </div>
                                     <button
-                                        onClick={() => addToCart(product)}
+                                        onClick={() => handleMoveToCart(product)}
                                         disabled={product.stock <= 0}
                                         className={`w-full mt-4 flex items-center justify-center gap-2 py-3 rounded-xl font-semibold transition ${
                                             product.stock <= 0
