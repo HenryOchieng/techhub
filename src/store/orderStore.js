@@ -33,6 +33,23 @@ const useOrderStore = create(
                             : state.currentOrder
                 })),
 
+            updatePaymentStatus: (orderNumber, paymentStatus) =>
+                set((state) => ({
+                    orders: state.orders.map((order) =>
+                        order.orderNumber === orderNumber
+                            ? {...order, paymentStatus}
+                            : order
+                    ),
+
+                    currentOrder:
+                        state.currentOrder?.orderNumber === orderNumber
+                            ? {
+                                ...state.currentOrder,
+                                paymentStatus
+                            }
+                            : state.currentOrder
+                })),
+
             clearCurrentOrder: () =>
                 set({
                     currentOrder: null

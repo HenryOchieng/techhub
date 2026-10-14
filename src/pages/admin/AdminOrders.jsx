@@ -16,6 +16,14 @@ function AdminOrders() {
 
     const orders = useOrderStore((state) => state.orders)
 
+    const updateOrderStatus = useOrderStore(
+        (state) => state.updateOrderStatus
+    )
+
+    const updatePaymentStatus = useOrderStore(
+        (state) => state.updatePaymentStatus
+    )
+
     const filteredOrders = orders.filter((order) => {
         const orderId = String(order.id ?? order.orderNumber ?? "")
         const customer = String(order.customerName ?? order.customer ?? `${order.shippingDetails?.firstName ?? ""} ${order.shippingDetails?.lastName ?? ""}`.trim())
@@ -44,6 +52,15 @@ function AdminOrders() {
             case "Cancelled":
                 return "bg-red-100 text-red-700"
 
+            case "Confirmed":
+                return "bg-indigo-100 text-indigo-700"
+
+            case "Shipped":
+                return "bg-purple-100 text-purple-700"
+
+            case "Delivered":
+                return "bg-green-100 text-green-700"
+
             default:
                 return "bg-slate-100 text-slate-700"
         }
@@ -53,6 +70,30 @@ function AdminOrders() {
         return status === "Paid"
             ? "bg-green-100 text-green-700"
             : "bg-yellow-100 text-yellow-700"
+    }
+
+    const handleOrderStatusChange = (status) => {
+        const orderNumber =
+            selectedOrder.orderNumber ?? selectedOrder.id
+
+        updateOrderStatus(orderNumber, status)
+
+        setSelectedOrder((previous) => ({
+            ...previous,
+            status
+        }))
+    }
+
+    const handlePaymentStatusChange = (paymentStatus) => {
+        const orderNumber =
+            selectedOrder.orderNumber ?? selectedOrder.id
+
+        updatePaymentStatus(orderNumber, paymentStatus)
+
+        setSelectedOrder((previous) => ({
+            ...previous,
+            paymentStatus
+        }))
     }
 
     return (
@@ -97,7 +138,10 @@ function AdminOrders() {
                         >
                             <option value="All">All Statuses</option>
                             <option value="Pending">Pending</option>
+                            <option value="Confirmed">Confirmed</option>
                             <option value="Processing">Processing</option>
+                            <option value="Shipped">Shipped</option>
+                            <option value="Delivered">Delivered</option>
                             <option value="Completed">Completed</option>
                             <option value="Cancelled">Cancelled</option>
                         </select>
@@ -149,7 +193,7 @@ function AdminOrders() {
                             {filteredOrders.map((order, index) => {
                                 const customerName =
                                     (
-                                        order.customerNamer ??
+                                        order.customerName ??
                                         order.customer ??
                                         `${order.shippingDetails?.firstName ?? ""} ${order.shippingDetails?.lastName ?? ""}`.trim()
                                     ) || "N/A"
@@ -292,6 +336,63 @@ function AdminOrders() {
                                         </span>
                                     </div>
                                 </div>
+                            </div>
+                            
+                            {/* Order and Payment Management */}
+                            <div>
+                                <h3 className="text-lg font-bold text-slate-900 mb-4">
+                                    Manage Order
+                                </h3>
+                                <div className="grid sm:grid=cols-2 gap-5">
+                                    <div className="bg-slate-50 rounded-xl p-5">
+                                        <label
+                                            htmlFor="orderStatus"
+                                            className="block text-sm font-semibold text-slate-700 mb-2"
+                                        >
+                                            Order Status
+                                        </label>
+                                        <select
+                                            id="orderStatus"
+                                            value={selectedOrder.status ?? "Pending"}
+                                            onChange={(e) =>
+                                                handleOrderStatusChange(e.target.value)
+                                            }
+                                            className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        >
+                                            <option value="Pending">Pending</option>
+                                            <option value="Confirmed">Confirmed</option>
+                                            <option value="Processing">Processing</option>
+                                            <option value="Shipped">Shipped</option>
+                                            <option value="Delivered">Delivered</option>
+                                            <option value="Completed">Completed</option>
+                                            <option value="Cancelled">Cancelled</option>
+                                        </select>
+                                    </div>
+                                    <div className="bg-slate-50 rounded-xl p-5">
+                                        <label
+                                            htmlFor="paymentStatus"
+                                            className="block text-sm font-semibold text-slate-700 mb-2"
+                                        >
+                                            Payment Status
+                                        </label>
+                                        <select
+                                            id="paymentStatus"
+                                            value={selectedOrder.paymentStatus ?? "Pending"}
+                                            onChange={(e) =>
+                                                handlePaymentStatusChange(e.target.value)
+                                            }
+                                            className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        >
+                                            <option value="Pending">Pending</option>
+                                            <option value="Paid">Paid</option>
+                                            <option value="Failed">Failed</option>
+                                            <option value="Refunded">Refunded</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <p className="text-xs text-slate-500 mt-3">
+                                    Order progress and payment status are managed independently.
+                                </p>
                             </div>
 
                             {/* Customer */}
