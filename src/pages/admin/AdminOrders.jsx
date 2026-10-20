@@ -8,6 +8,7 @@ import {
 } from "react-icons/fi"
 import useOrderStore from "../../store/orderStore"
 import { formatKenyanDateTime } from "../../utils/formatDate"
+import toast from "react-hot-toast"
 
 function AdminOrders() {
     const [search, setSearch] = useState("")
@@ -15,6 +16,8 @@ function AdminOrders() {
     const [selectedOrder, setSelectedOrder] = useState(null)
 
     const orders = useOrderStore((state) => state.orders)
+
+    const cancelOrder = useOrderStore((state) => state.cancelOrder)
 
     const updateOrderStatus = useOrderStore(
         (state) => state.updateOrderStatus
@@ -73,14 +76,35 @@ function AdminOrders() {
     }
 
     const handleOrderStatusChange = (status) => {
-        const orderNumber =
-            selectedOrder.orderNumber ?? selectedOrder.id
+        const orderNumber = selectedOrder.orderNumber ?? selectedOrder.id
+
+        if (status === "Cancelled") {
+            const confirmed = window.confirm("Are you sure you want to cancel this order?")
+
+            if (!confirmed) return 
+
+            const success = cancelOrder(orderNumber)
+
+            if (!success) {
+                toast.error("Unable to cancel this order. Check its status and stock.")
+
+                return
+            }
+
+            setSelectedOrder((previous) => ({
+                ...previous,
+                status: "Cancelled",
+            }))
+
+            toast.success("Order cancelled successfully.")
+            return
+        }
 
         updateOrderStatus(orderNumber, status)
 
         setSelectedOrder((previous) => ({
             ...previous,
-            status
+            status,
         }))
     }
 

@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom"
 import useOrderStore from "../store/orderStore"
 import useCheckoutStore from "../store/checkoutStore"
 import useCartStore from "../store/cartStore"
+import useProductStore from "../store/productStore"
 import PaymentCard from "../components/checkout/PaymentCard"
 import {
     FiSmartphone,
@@ -10,6 +11,7 @@ import {
     FiDollarSign,
     FiShield
 } from "react-icons/fi"
+import toast from "react-hot-toast"
 
 function Payment() {
     const clearCart = useCartStore(
@@ -51,6 +53,9 @@ function Payment() {
     )
 
     const [isProcessing, setIsProcessing] = useState(false)
+
+    const decreaseStock = useProductStore((state) => state.decreaseStock)
+    //console.log("decreaseStock:", decreaseStock)
 
     const isPaymentValid = () => {
         if (!paymentMethod) {
@@ -95,58 +100,74 @@ function Payment() {
     }
 
     const handlePlaceOrder = async () => {
-        if (!isPaymentValid()) return 
+        if (!isPaymentValid() || isProcessing) return
+
+        if(!cart.length) {
+            toast.error("Your cart is empty.")
+            return
+        }
 
         setIsProcessing(true)
 
-        await new Promise((resolve) => 
-            setTimeout(resolve, 1500)
-        )
+        try {
+            const stockUpdated = decreaseStock(cart)
 
-        const orderNumber = 
-            `ORD-${new Date().getFullYear()}-${Date.now()
-                .toString()
-                .slice(-6)
-            }`
+            if (!stockUpdated) {
+                toast.error(
+                    "Unable to place order. Check product availability."
+                )
+                setIsProcessing(false)
+                return
+            }
 
-        const isCashOnDelivery = paymentMethod === "Cash On Delivery"
+            const now = new Date().toISOString()
 
-        const order = {
-            id: orderNumber,
-            orderNumber,
-            customer: `${shippingDetails.firstName ?? ""} ${shippingDetails.lastName ?? ""}`.trim(),
-            customerName: `${shippingDetails.firstName ?? ""} ${shippingDetails.lastName ?? ""}`.trim(),
-            email: shippingDetails.email ?? "",
-            phone: shippingDetails.phone ?? "",
-            items: cart,
-            shippingDetails,
-            paymentMethod,
-            mpesaNumber:
-                paymentMethod === "M-Pesa"
-                    ? mpesaNumber
-                    : null,
-            subtotal,
-            shipping,
-            total,
-            //status: "Pending",
-            status: isCashOnDelivery ? "Delivered" : "Pending",
-            paymentStatus: isCashOnDelivery ? "Paid" : "Pending",
-            date: new Date().toISOString(),
-            orderDate: new Date().toISOString(),
-            createdAt: new Date().toISOString()
+            const orderNumber =
+                `ORD-${new Date().getFullYear()}-${Date.now()
+                    .toString()
+                    .slice(-6)
+                }`
+
+            const isCashOnDelivery = paymentMethod === "Cash On Delivery"
+
+            const order = {
+                id: orderNumber,
+                orderNumber,
+                customer:
+                    `${shippingDetails.firstName ?? ""} ${shippingDetails.lastName ?? ""}`.trim(),
+                customerName:
+                    `${shippingDetails.firstName ?? ""} ${shippingDetails.lastName ?? ""}`.trim(),
+                email: shippingDetails.email ?? "",
+                phone: shippingDetails.phone ?? "",
+                items: cart,
+                shippingDetails,
+                paymentMethod,
+                mpesaNumber: paymentMethod === "M-Pesa" ? mpesaNumber : null,
+                subtotal,
+                shipping,
+                total,
+                status: isCashOnDelivery ? "Pending" : "Pending",
+                paymentStatus: "Pending",
+                date: now,
+                order: now,
+                orderDate: now,
+                createdAt: now,
+                stockDeducted: true,
+                stockRestored: false
+            }
+
+            createOrder(order)
+
+            clearCart()
+            clearCheckout()
+
+            navigate("/order-success")
+        } catch (error) {
+            console.error("Failed to place order:", error)
+            toast.error("Unable to place your order. Please try again.")
+        } finally {
+            setIsProcessing(false)
         }
-
-        console.log("Selected payment method:", paymentMethod)
-        console.log("Order being saved:", order)
-
-        createOrder(order)
-
-        clearCart()
-        clearCheckout()
-
-        setIsProcessing(false)
-
-        navigate("/order-success")
     }
 
     const [mpesaStatus, setMpesaStatus] = useState("idle")

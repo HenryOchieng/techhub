@@ -1,6 +1,7 @@
 import { create } from "zustand"
 import { persist } from "zustand/middleware"
 
+
 import eliteBook from "../assets/products/hp/elitebook.jpg"
 import eliteBookBack from "../assets/products/hp/elitebook-back.jpg"
 import eliteBookSide from "../assets/products/hp/elitebook-side.jpg"
@@ -213,6 +214,99 @@ const useProductStore = create(
                             : product
                     )
                 })),
+
+            decreaseStock: (items) => {
+                let success = false
+
+                set((state) => {
+                    const hasInsufficientStock = items.some((item) => {
+                        const product = state.products.find(
+                            (product) => String(product.id) === String(item.id)
+                        )
+
+                        const quantity = Number(item.quantity)
+
+                        return (
+                            !product ||
+                            !Number.isInteger(quantity) ||
+                            quantity <= 0 ||
+                            !Number.isFinite(product.stock) ||
+                            product.stock < quantity
+                        )
+                    })
+
+                    if (hasInsufficientStock || items.length === 0) {
+                        return state
+                    }
+
+                    success = true
+
+                    return {
+                        products: state.products.map((product) => {
+                            const item = items.find(
+                                (item) =>
+                                    String(item.id) === String(product.id)
+                            )
+
+                            return item
+                                ? {
+                                    ...product,
+                                    stock:
+                                        product.stock - Number(item.quantity)
+                                }
+                                : product
+                        })
+                    }
+                })
+
+                return success
+            },
+
+            increaseStock: (items) => {
+                let success = false
+
+                set((state) => {
+                    if (!Array.isArray(items) || items.length === 0) {
+                        return true
+                    }
+
+                    const validItems = items.every((item) => {
+                        const product = state.products.find(
+                            (product) => String(product.id) === String(item.id)
+                        )
+
+                        const quantity = Number(item.quantity)
+
+                        return (
+                            product &&
+                            Number.isInteger(quantity) &&
+                            quantity > 0 &&
+                            Number.isFinite(Number(product.stock))
+                        )
+                    })
+
+                    if (!validItems) return state
+
+                    success = true
+
+                    return {
+                        products: state.products.map((product) => {
+                            const item = items.find(
+                                (item) => String(item.id) === String(product.id)
+                            )
+
+                            return item
+                                ? {
+                                    ...product,
+                                    stock: Number(product.stock) + Number(item.quantity),
+                                }
+                                : product
+                        }),
+                    }
+                })
+
+                return success
+            },
 
             deleteProduct: (productId) =>
                 set((state) => ({
