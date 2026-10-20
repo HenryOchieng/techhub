@@ -128,12 +128,19 @@ function AdminOrders() {
         const orderNumber =
             selectedOrder.orderNumber ?? selectedOrder.id
 
-        updatePaymentStatus(orderNumber, paymentStatus)
+        const success = updatePaymentStatus(orderNumber, paymentStatus)
+
+        if (!success) {
+            toast.error(`Cannot change payment status from ${selectedOrder.paymentStatus ?? "Pending"} to ${paymentStatus}`)
+            return
+        }
 
         setSelectedOrder((previous) => ({
             ...previous,
-            paymentStatus
+            paymentStatus,
         }))
+
+        toast.success(`Payment status updated to ${paymentStatus}.`)
     }
 
     return (
@@ -423,10 +430,19 @@ function AdminOrders() {
                                             }
                                             className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
                                         >
-                                            <option value="Pending">Pending</option>
-                                            <option value="Paid">Paid</option>
-                                            <option value="Failed">Failed</option>
-                                            <option value="Refunded">Refunded</option>
+                                            <option value={selectedOrder.paymentStatus ?? "Pending"}>{selectedOrder.paymentStatus ?? "Pending"}</option>
+
+                                            {(
+                                                {
+                                                    Pending: ["Paid", "Failed"],
+                                                    Failed: ["Pending", "Paid"],
+                                                    Paid: ["Refunded"],
+                                                    Refunded: [],
+                                                }[selectedOrder.paymentStatus ?? "Pending"] ?? []
+                                            ).map((status) => (
+                                                <option key={status} value={status}>{status}</option>
+                                            ))}
+
                                         </select>
                                     </div>
                                 </div>

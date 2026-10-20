@@ -1,3 +1,4 @@
+
 import { create } from "zustand"
 import { persist } from "zustand/middleware"
 import useProductStore from "./productStore"
@@ -11,24 +12,45 @@ const orderStatusTransitions = {
     Cancelled: [],
 }
 
+const paymentStatusTransitions = {
+    Pending: ["Paid", "Failed"],
+    Failed: ["Pending", "Paid"],
+    Paid: ["Refunded"],
+    Refunded: [],
+}
+
+const getOrderKey = (order) =>
+    String(order.orderNumber ?? order.id)
+
+const isCashOnDelivery = (order) =>
+    order.paymentMethod === "Cash On Delivery"
+
+const canFulfillOrder = (order) => {
+    if (isCashOnDelivery(order)) {
+        return ["Pending", "Paid"].includes(
+            order.paymentStatus ?? "Pending"
+        )
+    }
+
+    return order.paymentStatus === "Paid"
+}
+
 const useOrderStore = create(
     persist(
         (set, get) => ({
             orders: [],
             currentOrder: null,
 
-            createOrder: (order) => 
+            createOrder: (order) =>
                 set((state) => ({
-                    orders: [
-                        ...state.orders,
-                        order
-                    ],
-                    currentOrder: order 
+                    orders: [...state.orders, order],
+                    currentOrder: order,
                 })),
 
             updateOrderStatus: (orderNumber, status) => {
                 const order = get().orders.find(
-                    (item) => String(item.orderNumber ?? item.id) === String(orderNumber)
+                    (item) =>
+                        getOrderKey(item) === String(orderNumber)
                 )
 
                 if (!order) {
@@ -36,59 +58,142 @@ const useOrderStore = create(
                     return false
                 }
 
-                const allowedStatuses = orderStatusTransitions[order.status] ?? []
+                const allowedStatuses =
+                    orderStatusTransitions[order.status] ?? []
 
                 if (!allowedStatuses.includes(status)) {
-                    console.warn(`Invalid order status transition: ${order.status} -> ${status}`)
+                    console.warn(
+                        `Invalid order status transition: ${order.status} -> ${status}`
+                    )
                     return false
                 }
 
+                // Cancellation uses the existing stock-restoration logic.
                 if (status === "Cancelled") {
                     return get().cancelOrder(orderNumber)
                 }
 
+                // Confirmed and all subsequent fulfillment statuses
+                // require an eligible payment state.
+                const fulfillmentStatuses = [
+                    "Confirmed",
+                    "Processing",
+                    "Shipped",
+                    "Delivered",
+                ]
+
+                if (
+                    fulfillmentStatuses.includes(status) &&
+                    !canFulfillOrder(order)
+                ) {
+                    console.warn(
+                        "Order cannot progress until payment is eligible.",
+                        {
+                            orderNumber,
+                            paymentMethod: order.paymentMethod,
+                            paymentStatus: order.paymentStatus ?? "Pending",
+                            requestedStatus: status,
+                        }
+                    )
+                    return false
+                }
+
                 set((state) => ({
-                    orders: state.orders.map((item) => String(item.orderNumber ?? item.id) === String(orderNumber) ? { ...item, status } : item),
+                    orders: state.orders.map((item) =>
+                        getOrderKey(item) === String(orderNumber)
+                            ? { ...item, status }
+                            : item
+                    ),
 
                     currentOrder:
                         state.currentOrder &&
-                        String(state.currentOrder.orderNumber ?? state.currentOrder.id) === String(orderNumber) ? { ...state.currentOrder, status } : state.currentOrder,
+                        getOrderKey(state.currentOrder) ===
+                            String(orderNumber)
+                            ? { ...state.currentOrder, status }
+                            : state.currentOrder,
                 }))
 
                 return true
             },
 
-            updatePaymentStatus: (orderNumber, paymentStatus) =>
+            updatePaymentStatus: (orderNumber, paymentStatus) => {
+                const order = get().orders.find(
+                    (item) =>
+                        getOrderKey(item) === String(orderNumber)
+                )
+
+                if (!order) {
+                    console.error("Order not found:", orderNumber)
+                    return false
+                }
+
+                const currentPaymentStatus =
+                    order.paymentStatus ?? "Pending"
+
+                const allowedStatuses =
+                    paymentStatusTransitions[currentPaymentStatus] ?? []
+
+                if (!allowedStatuses.includes(paymentStatus)) {
+                    console.warn(
+                        `Invalid payment status transition: ${currentPaymentStatus} -> ${paymentStatus}`
+                    )
+                    return false
+                }
+
+                // A failed payment cannot be recorded after fulfillment
+                // has moved beyond Pending.
+                if (
+                    paymentStatus === "Failed" &&
+                    order.status !== "Pending"
+                ) {
+                    console.warn(
+                        "Payment cannot be marked Failed after order confirmation."
+                    )
+                    return false
+                }
+
+                // Refunds are allowed only for cancelled or delivered orders.
+                if (
+                    paymentStatus === "Refunded" &&
+                    !["Cancelled", "Delivered"].includes(order.status)
+                ) {
+                    console.warn(
+                        "Cancel or complete the order before recording a refund."
+                    )
+                    return false
+                }
+
                 set((state) => ({
-                    orders: state.orders.map((order) =>
-                        order.orderNumber === orderNumber
-                            ? {...order, paymentStatus}
-                            : order
+                    orders: state.orders.map((item) =>
+                        getOrderKey(item) === String(orderNumber)
+                            ? { ...item, paymentStatus }
+                            : item
                     ),
 
                     currentOrder:
-                        state.currentOrder?.orderNumber === orderNumber
-                            ? {
-                                ...state.currentOrder,
-                                paymentStatus
-                            }
-                            : state.currentOrder
-                })),
+                        state.currentOrder &&
+                        getOrderKey(state.currentOrder) ===
+                            String(orderNumber)
+                            ? { ...state.currentOrder, paymentStatus }
+                            : state.currentOrder,
+                }))
+
+                return true
+            },
 
             clearCurrentOrder: () =>
-                set({
-                    currentOrder: null
-                }),
+                set({ currentOrder: null }),
 
             clearOrders: () =>
                 set({
                     orders: [],
-                    currentOrder: null
+                    currentOrder: null,
                 }),
 
             cancelOrder: (orderNumber) => {
                 const order = get().orders.find(
-                    (item) => String(item.orderNumber ?? item.id) === String(orderNumber)
+                    (item) =>
+                        getOrderKey(item) === String(orderNumber)
                 )
 
                 if (!order) {
@@ -97,57 +202,67 @@ const useOrderStore = create(
                 }
 
                 if (!["Pending", "Confirmed"].includes(order.status)) {
-                    console.warn("Order cannot be cancelled:", order.status)
+                    console.warn(
+                        "Order cannot be cancelled:",
+                        order.status
+                    )
                     return false
                 }
 
-                if (order.stockDeducted && !order.stockRestored) {
-                    const increaseStock = useProductStore.getState().increaseStock
+                // Restore stock only once, and only when this order
+                // actually deducted it.
+                if (
+                    order.stockDeducted === true &&
+                    order.stockRestored !== true
+                ) {
+                    const increaseStock =
+                        useProductStore.getState().increaseStock
 
                     if (typeof increaseStock !== "function") {
-                        console.error("IncreaseStock is unavailable.")
+                        console.error("increaseStock is unavailable.")
                         return false
                     }
 
                     const restored = increaseStock(order.items)
 
                     if (restored !== true) {
-                        console.error("Stock restoration failed,", {
+                        console.error("Stock restoration failed.", {
                             orderItems: order.items,
                             restored,
                         })
                         return false
                     }
-                    
-                    set((state) => ({
-                        orders: state.orders.map((item) =>
-                            String(item.orderNumber ?? item.id) === String(orderNumber)
-                                ? {
-                                    ...item,
-                                    status: "Cancelled",
-                                    stockRestored: item.stockDeducted === true ? true : item.stockRestored ?? false,
-                                }
-                                : item
-                        ),
-
-                        currentOrder:
-                            state.currentOrder &&
-                            String(state.currentOrder.orderNumber ?? state.currentOrder.id) === String(orderNumber)
-                                ? {
-                                    ...state.currentOrder,
-                                    status: "Cancelled",
-                                    stockRestored: state.currentOrder.stockDeducted === true ? true : state.currentOrder.stockRestored ?? false,
-                                }
-                                : state.currentOrder
-                    }))
-
-                    return true
-
                 }
-            }
+
+                const updatedOrder = {
+                    ...order,
+                    status: "Cancelled",
+                    stockRestored:
+                        order.stockDeducted === true
+                            ? true
+                            : order.stockRestored ?? false,
+                }
+
+                set((state) => ({
+                    orders: state.orders.map((item) =>
+                        getOrderKey(item) === String(orderNumber)
+                            ? updatedOrder
+                            : item
+                    ),
+
+                    currentOrder:
+                        state.currentOrder &&
+                        getOrderKey(state.currentOrder) ===
+                            String(orderNumber)
+                            ? updatedOrder
+                            : state.currentOrder,
+                }))
+
+                return true
+            },
         }),
         {
-            name: "order-storage"
+            name: "order-storage",
         }
     )
 )
