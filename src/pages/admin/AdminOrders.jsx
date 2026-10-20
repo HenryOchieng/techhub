@@ -10,6 +10,15 @@ import useOrderStore from "../../store/orderStore"
 import { formatKenyanDateTime } from "../../utils/formatDate"
 import toast from "react-hot-toast"
 
+const allowedStatusTransitions = {
+    Pending: ["Confirmed", "Cancelled"],
+    Confirmed: ["Processing", "Cancelled"],
+    Processing: ["Shipped"],
+    Shipped: ["Delivered"],
+    Delivered: [],
+    Cancelled: [],
+}
+
 function AdminOrders() {
     const [search, setSearch] = useState("")
     const [statusFilter, setStatusFilter] = useState("All")
@@ -100,12 +109,19 @@ function AdminOrders() {
             return
         }
 
-        updateOrderStatus(orderNumber, status)
+        const success = updateOrderStatus(orderNumber, status)
+
+        if (!success) {
+            toast.error(`Cannot change order from ${selectedOrder.status} to ${status}.`)
+            return
+        }
 
         setSelectedOrder((previous) => ({
             ...previous,
             status,
         }))
+
+        toast.success(`Order status updated to ${status}`)
     }
 
     const handlePaymentStatusChange = (paymentStatus) => {
@@ -166,7 +182,6 @@ function AdminOrders() {
                             <option value="Processing">Processing</option>
                             <option value="Shipped">Shipped</option>
                             <option value="Delivered">Delivered</option>
-                            <option value="Completed">Completed</option>
                             <option value="Cancelled">Cancelled</option>
                         </select>
                     </div>
@@ -383,13 +398,14 @@ function AdminOrders() {
                                             }
                                             className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
                                         >
-                                            <option value="Pending">Pending</option>
-                                            <option value="Confirmed">Confirmed</option>
-                                            <option value="Processing">Processing</option>
-                                            <option value="Shipped">Shipped</option>
-                                            <option value="Delivered">Delivered</option>
-                                            <option value="Completed">Completed</option>
-                                            <option value="Cancelled">Cancelled</option>
+                                            <option value={selectedOrder.status}>{selectedOrder.status}</option>
+
+                                            {(allowedStatusTransitions[selectedOrder.status] ?? []).map(
+                                                (status) => (
+                                                    <option key={status} value={status}>{status}</option>
+                                                )
+                                            )}
+
                                         </select>
                                     </div>
                                     <div className="bg-slate-50 rounded-xl p-5">

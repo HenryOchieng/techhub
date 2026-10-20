@@ -2,6 +2,15 @@ import { create } from "zustand"
 import { persist } from "zustand/middleware"
 import useProductStore from "./productStore"
 
+const orderStatusTransitions = {
+    Pending: ["Confirmed", "Cancelled"],
+    Confirmed: ["Processing", "Cancelled"],
+    Processing: ["Shipped"],
+    Shipped: ["Delivered"],
+    Delivered: [],
+    Cancelled: [],
+}
+
 const useOrderStore = create(
     persist(
         (set, get) => ({
@@ -17,22 +26,37 @@ const useOrderStore = create(
                     currentOrder: order 
                 })),
 
-            updateOrderStatus: (orderNumber, status) => 
+            updateOrderStatus: (orderNumber, status) => {
+                const order = get().orders.find(
+                    (item) => String(item.orderNumber ?? item.id) === String(orderNumber)
+                )
+
+                if (!order) {
+                    console.error("Order not found:", orderNumber)
+                    return false
+                }
+
+                const allowedStatuses = orderStatusTransitions[order.status] ?? []
+
+                if (!allowedStatuses.includes(status)) {
+                    console.warn(`Invalid order status transition: ${order.status} -> ${status}`)
+                    return false
+                }
+
+                if (status === "Cancelled") {
+                    return get().cancelOrder(orderNumber)
+                }
+
                 set((state) => ({
-                    orders: state.orders.map((order) =>
-                        order.orderNumber === orderNumber
-                            ? { ...order, status}
-                            : order
-                    ),
+                    orders: state.orders.map((item) => String(item.orderNumber ?? item.id) === String(orderNumber) ? { ...item, status } : item),
 
                     currentOrder:
-                        state.currentOrder?.orderNumber === orderNumber
-                            ? {
-                                ...state.currentOrder,
-                                status
-                            }
-                            : state.currentOrder
-                })),
+                        state.currentOrder &&
+                        String(state.currentOrder.orderNumber ?? state.currentOrder.id) === String(orderNumber) ? { ...state.currentOrder, status } : state.currentOrder,
+                }))
+
+                return true
+            },
 
             updatePaymentStatus: (orderNumber, paymentStatus) =>
                 set((state) => ({
