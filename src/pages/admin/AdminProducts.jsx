@@ -8,7 +8,9 @@ import {
     FiFilter,
     FiPackage,
     FiX,
-    FiPlus
+    FiPlus,
+    FiAlertTriangle,
+    FiXCircle
 } from "react-icons/fi"
 
 function AdminProducts() {
@@ -18,6 +20,7 @@ function AdminProducts() {
     const [editingProduct, setEditingProduct] = useState(null)
     const [addingProduct, setAddingProduct] = useState(false)
     const [deletingProduct, setDeletingProduct] = useState(null)
+    const [stockFilter, setStockFilter] = useState("All")
 
     const products = useProductStore((state) => state.products)
 
@@ -32,15 +35,41 @@ function AdminProducts() {
     )
 
     const filteredProducts = products.filter((product) => {
+        const searchTerm = search.toLowerCase()
+
         const matchesSearch = 
-            product.name.toLocaleLowerCase().includes(search.toLocaleLowerCase()) ||
-            product.brand.toLocaleLowerCase().includes(search.toLocaleLowerCase())
+            product.name.toLocaleLowerCase().includes(searchTerm) ||
+            (product.brand || "").toLocaleLowerCase().includes(searchTerm)
 
         const matchesCategory =
             categoryFilter === "All" ||
             product.category === categoryFilter
 
-        return matchesSearch && matchesCategory
+        const stock = Number(product.stock ?? 0)
+        const level = Number(product.lowStockLevel ?? 5)
+
+        const matchesStock =
+            stockFilter === "All" ||
+            (stockFilter === "Low Stock" &&
+                stock > 0 &&
+                stock <= level) ||
+            (stockFilter === "Out of Stock" && stock <= 0)
+            
+
+        return matchesSearch && matchesCategory && matchesStock
+    })
+
+    const totalProducts = products.length
+
+    const lowStockProducts = products.filter((product) => {
+        const stock = Number(product.stock ?? 0)
+        const level = Number(product.lowStockLevel ?? 5)
+
+        return stock > 0 && stock <= level
+    })
+
+    const outOfStockProducts = products.filter((product) => {
+        return Number(product.stock ?? 0) <= 0
     })
 
     const getStockStyle = (stock) => {
@@ -91,6 +120,92 @@ function AdminProducts() {
                     Add Product
                 </button>
             </div>
+
+            {/* Inventory Summary Cards */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6 py-5">
+                <button
+                    type="button"
+                    onClick={() => {
+                        setStockFilter("All")
+                        setSearch("")
+                        setCategoryFilter("All")
+                    }} 
+                    className="w-full text-left bg-white rounded-xl border border-gray-200 p-5 shadow-sm hover:shadow-md transition cursor-pointer">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <p className="text-sm font-medium text-gray-500">
+                                    Total Products
+                                </p>
+                                <h3 className="text-2xl font-bold text-gray-900 mt-2">
+                                    {totalProducts}
+                                </h3>
+                                <p className="text-xs text-gray-500 mt-1">
+                                    Products in your Inventory
+                                </p>
+                            </div>
+                            <div className="bg-blue-100 text-blue-600 p-3 rounded-lg">
+                                <FiPackage size={24} />
+                            </div>
+                        </div>
+                </button>
+                <button
+                    type="button"
+                    onClick={() => setStockFilter("Low Stock")}
+                    className={`w-full text-left bg-white rounded-xl border p-5 shadow-sm shadow-sm hover:shadow-md transition cursor-pointer ${stockFilter === "Low Stock" ? "border-yellow-500 ring-2 ring-yellow-100" : "border-yellow-200"}`}>
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <p className="text-sm font-medium text-gray-500">
+                                    Low Stock
+                                </p>
+                                <h3 className="text-2xl font-bold text-yellow-600 mt-2">
+                                    {lowStockProducts.length}
+                                </h3>
+                                <p className="text-xs text-gray-500 mt-1">
+                                    Products needing restocking
+                                </p>
+                            </div>
+                            <div className="bg-yellow-100 text-yellow-600 p-3 rounded-lg">
+                                <FiAlertTriangle size={24} />
+                            </div>
+                        </div>
+                </button>
+                <button
+                    type="button"
+                    onClick={() => setStockFilter("Out of Stock")} 
+                    className={`w-full text-left bg-white rounded-xl border p-5 shadow-sm hover:shadow-md transition cursor-pointer ${stockFilter === "Out of Stock" ? "border-red-500 ring-2 ring-red-100" : "border-red-200"}`}>
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <p className="text-sm font-meduium text-gray-500">
+                                    Out of Stock
+                                </p>
+                                <h3 className="text-2xl font-bold text-red-600 mt-2">
+                                    {outOfStockProducts.length}
+                                </h3>
+                                <p className="text-xs text-gray-500 mt-1">
+                                    Products unavailable
+                                </p>
+                            </div>
+                            <div className="bg-red-100 text-red-600 p-3 rounded-lg">
+                                <FiXCircle size={24} />
+                            </div>
+                        </div>
+                </button>
+            </div>
+
+            {stockFilter !== "All" && (
+                <div className="flex items-center justify-between mb-4">
+                    <p className="text-sm text-slate-600">
+                        Showing: <span className="font-semibold">{stockFilter}</span>
+                    </p>
+                    <button
+                        type="button"
+                        onClick={() => setStockFilter("All")}
+                        className="text-sm font-semibold text-blue-600 hover:text-blue-700"
+                    >
+                        Clear stock filter
+                    </button>
+                </div>
+            )}
 
             {/* Filters */}
             <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 mb-6">

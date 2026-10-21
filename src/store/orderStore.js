@@ -140,8 +140,6 @@ const useOrderStore = create(
                     return false
                 }
 
-                // A failed payment cannot be recorded after fulfillment
-                // has moved beyond Pending.
                 if (
                     paymentStatus === "Failed" &&
                     order.status !== "Pending"
@@ -152,7 +150,7 @@ const useOrderStore = create(
                     return false
                 }
 
-                // Refunds are allowed only for cancelled or delivered orders.
+                
                 if (
                     paymentStatus === "Refunded" &&
                     !["Cancelled", "Delivered"].includes(order.status)
@@ -163,18 +161,28 @@ const useOrderStore = create(
                     return false
                 }
 
+                const shouldConfirmOrder =
+                    paymentStatus === "Paid" &&
+                    order.status === "Pending" &&
+                    !isCashOnDelivery(order)
+
+                const updateOrder = {
+                    ...order,
+                    paymentStatus,
+                    ...(shouldConfirmOrder ? { status: "Confirmed" } : {}),
+                }
+
                 set((state) => ({
                     orders: state.orders.map((item) =>
                         getOrderKey(item) === String(orderNumber)
-                            ? { ...item, paymentStatus }
+                            ? updateOrder
                             : item
                     ),
 
                     currentOrder:
                         state.currentOrder &&
-                        getOrderKey(state.currentOrder) ===
-                            String(orderNumber)
-                            ? { ...state.currentOrder, paymentStatus }
+                        getOrderKey(state.currentOrder) === String(orderNumber)
+                            ? updateOrder
                             : state.currentOrder,
                 }))
 
@@ -209,8 +217,6 @@ const useOrderStore = create(
                     return false
                 }
 
-                // Restore stock only once, and only when this order
-                // actually deducted it.
                 if (
                     order.stockDeducted === true &&
                     order.stockRestored !== true

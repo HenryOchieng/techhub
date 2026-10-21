@@ -18,10 +18,28 @@ import samsungMonitor from "../assets/products/monitor/Samsung.jpg"
 import samMonitor1 from "../assets/products/monitor/Samsung-back.jpg"
 import samMonitor2 from "../assets/products/monitor/Samsung-front.jpg"
 import samMonitor3 from "../assets/products/monitor/Samsung-side.jpg"
+//import { get } from "react-hook-form"
+
+const defaultLowStockLevel = 5
+
+export const getInventoryStatus = (product) => {
+    const stock = Number(product.stock)
+    const level = Number(product.lowStockLevel ?? defaultLowStockLevel)
+
+    if (!Number.isFinite(stock) || stock <= 0) {
+        return "Out of Stock"
+    }
+
+    if (stock <= level) {
+        return "Low Stock"
+    }
+
+    return "In Stock"
+}
 
 const useProductStore = create(
     persist(
-        (set) => ({
+        (set, get) => ({
             products: [
                 {
                     id: 1,
@@ -197,7 +215,7 @@ const useProductStore = create(
                                 ? product.reviews
                                 : [],
                             image: product.image || product.images?.[0] || null,
-                            images: product.imagess?.length
+                            images: product.images?.length
                                 ? product.images
                                 : product.image
                                     ? [product.image]
@@ -308,6 +326,43 @@ const useProductStore = create(
                 return success
             },
 
+            setLowStockLevel: (productId, level) => {
+                if (!Number.isIntegre(level) || level < 0) {
+                    return false
+                }
+
+                let updated = false
+
+                set((state) => ({
+                    products: state.products.map((product) => {
+                        if (String(product.id) !== String(productId)) {
+                            return product
+                        }
+
+                        updated = true
+
+                        return {
+                            ...product,
+                            lowStockLevel: level,
+                        }
+                    }),
+                }))
+
+                return updated
+            },
+
+            getLowStockProducts: () => {
+                return get().products.filter(
+                    (product) => getInventoryStatus(product) === "Low Stock"
+                )
+            },
+
+            getOutOfStockProducts: () => {
+                return get().products.filter(
+                    (product) => getInventoryStatus(product) === "Out of Stock"
+                )
+            },
+
             deleteProduct: (productId) =>
                 set((state) => ({
                     products: state.products.filter(
@@ -316,7 +371,26 @@ const useProductStore = create(
                 }))
         }),
         {
-            name: "product-storage"
+            name: "product-storage",
+
+            merge: (persistedState, currentState) => {
+                const persisted = persistedState ?? {}
+
+                const persistedProducts = Array.isArray(persisted.products)
+                    ? persisted.products
+                    : currentState.products
+
+                return {
+                    ...currentState,
+                    ...persisted,
+                    products: persistedProducts.map((product) => ({
+                        ...product,
+                        lowStockLevel:
+                            product.lowStockLevel ??
+                            defaultLowStockLevel,
+                    })),
+                }
+            },
         }
     )
 )
