@@ -108,10 +108,6 @@ function AdminProducts() {
         const quantity = Number(restockQuantity)
 
         if (!Number.isInteger(quantity) || quantity <= 0 || !restockingProduct) {
-            console.log("Invalid restock details", {
-                quantity,
-                restockingProduct
-            })
             return
         }
 
@@ -120,10 +116,7 @@ function AdminProducts() {
             quantity
         )
 
-        console.log("Restock result:", success)
-
         if (!success) {
-            console.log("Restock failed. Check productStore.js")
             return
         }
 
