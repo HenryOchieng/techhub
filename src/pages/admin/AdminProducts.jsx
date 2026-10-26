@@ -21,6 +21,8 @@ function AdminProducts() {
     const [addingProduct, setAddingProduct] = useState(false)
     const [deletingProduct, setDeletingProduct] = useState(null)
     const [stockFilter, setStockFilter] = useState("All")
+    const [restockingProduct, setRestockingProduct] = useState(null)
+    const [restockQuantity, setRestockQuantity] = useState(1)
 
     const products = useProductStore((state) => state.products)
 
@@ -94,6 +96,39 @@ function AdminProducts() {
         }
 
         return "In Stock"
+    }
+
+    const restockProduct = useProductStore(
+        (state) => state.restockProduct
+    )
+
+    const handleRestock = (e) => {
+        e.preventDefault()
+
+        const quantity = Number(restockQuantity)
+
+        if (!Number.isInteger(quantity) || quantity <= 0 || !restockingProduct) {
+            console.log("Invalid restock details", {
+                quantity,
+                restockingProduct
+            })
+            return
+        }
+
+        const success = restockProduct(
+            restockingProduct.id,
+            quantity
+        )
+
+        console.log("Restock result:", success)
+
+        if (!success) {
+            console.log("Restock failed. Check productStore.js")
+            return
+        }
+
+        setRestockingProduct(null)
+        setRestockQuantity(1)
     }
 
     return (
@@ -351,6 +386,17 @@ function AdminProducts() {
                                                 aria-label={`Delet ${product.name}`}
                                             >
                                                 <FiTrash2 />
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    setRestockingProduct(product)
+                                                    setRestockQuantity(1)
+                                                }}
+                                                className="px-3 py-2 text-sm font-semibold text-green-700 bg-green-50 hover:bg-green-100 rounded-lg transition"
+                                                title="Restock Product"
+                                            >
+                                                Restock
                                             </button>
                                         </div>
                                     </td>
@@ -855,6 +901,83 @@ function AdminProducts() {
                                 Delete Product
                             </button>
                         </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Restock Product Modal */}
+            {restockingProduct && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+                    <div className="w-full max-w-md rounded-2xl bg-white shadow-xl">
+                        <div className="flex items-center justify-between border-b border-slate-200 p-5">
+                            <div>
+                                <h2 className="text-xl font-bold text-slate-900">
+                                    Restock Product
+                                </h2>
+                                <p className="text-xl text-sm text-slate-500">
+                                    Add incoming units to inventory
+                                </p>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => setRestockingProduct(null)}
+                                className="rounded-lg p-2 text-slate-500 hover:bg-slate-100"
+                                aria-label="Close restock modal"
+                            >
+                                <FiX size={20} />
+                            </button>
+                        </div>
+                        <form onSubmit={handleRestock} className="space-y-5 p-5">
+                            <div>
+                                <p className="font-semibold text-slate-800">
+                                    {restockingProduct.name}
+                                </p>
+                                <p className="mt-1 text-sm text-slate-500">
+                                    Current stock: {restockingProduct.stock ?? 0} units
+                                </p>
+                            </div>
+                            <div>
+                                <label
+                                    htmlFor="restockQuantity"
+                                    className="mb-2 block text-sm font-semibold text-slate-700"
+                                >
+                                    Quantity to add
+                                </label>
+                                <input
+                                    id="restockQuantity"
+                                    type="number"
+                                    min="1"
+                                    step="1"
+                                    required
+                                    value={restockQuantity}
+                                    onChange={(e) => setRestockQuantity(e.target.value)}
+                                    className="w-full rounded-xl border border-slate-200 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-green-500"
+                                />
+                            </div>
+                            <div className="rounded-xl bg-green-50 p-4">
+                                <p className="text-sm text-green-800">
+                                    New stock level
+                                </p>
+                                <p className="mt-1 text-2xl font-bold text-green-700">
+                                    {Number(restockingProduct.stock ?? 0) + (Number(restockQuantity) || 0)} units
+                                </p>
+                            </div>
+                            <div className="flex justify-end gap-3">
+                                <button
+                                    type="button"
+                                    onClick={() => setRestockingProduct(null)}
+                                    className="rounded-xl border border-slate-200 px-4 py-3 font-semibold text-slate-700 hover:bg-slate-50"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="submit"
+                                    className="rounded-xl bg-green-600 px-5 py-3 font-semibold text-white hover:bg-green-700"
+                                >
+                                    Confirm Restock
+                                </button>
+                            </div>
+                        </form>
                     </div>
                 </div>
             )}

@@ -4,9 +4,11 @@ import {
     FiUsers,
     FiPackage,
     FiArrowUp,
-    FiArrowDown
+    FiArrowDown,
+    FiClipboard,
 } from "react-icons/fi"
 import useOrderStore from "../../store/orderStore"
+import useProductStore from "../../store/productStore"
 
 function AdminDashboard() {
     const orders = useOrderStore((state) => state.orders)
@@ -33,6 +35,23 @@ function AdminDashboard() {
 
     const completedOrders = orders.filter(
         (order) => order.status === "Delivered"
+    ).length
+
+    const inventoryHistory = useProductStore(
+        (state) => state.inventoryHistory ?? []
+    )
+
+    const recentInventoryMovements = [...inventoryHistory]
+        .sort(
+            (a, b) =>
+                new Date(b.date).getTime() - new Date(a.date).getTime()
+        )
+        .slice(0, 5)
+
+    const totalInventoryMovements = inventoryHistory.length
+
+    const totalRestocks = inventoryHistory.filter(
+        (movement) => movement.type === "Restock"
     ).length
 
     const totalRevenue = orders
@@ -229,6 +248,119 @@ function AdminDashboard() {
 
                 </div>
 
+            </div>
+
+            {/* Inventory Activity */}
+            <div className="mt-8 bg-white border border-slate-200 rounded-2xl overflow-hidden">
+                <div className="px-6 py-5 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                    <div>
+                        <h2 className="text-lg font-bold text-slate-900">
+                            Inventory Hiistory
+                        </h2>
+                        <p className="text-sm text-slate-500 mt-1">
+                            Recent changes to your product stock levels
+                        </p>
+                    </div>
+                    <div className="flex gap-3">
+                        <div className="rounded-xl bg-blue-50 px-4 py-3">
+                            <p className="text-xs text-blue-600">
+                                Total Movements
+                            </p>
+                            <p className="text-xl font-bold text-blue-700">
+                                {totalInventoryMovements}
+                            </p>
+                        </div>
+                        <div className="rounded-xl bg-green-50 px-4 py-3">
+                            <p className="text-xs text-green=600">
+                                Restocks
+                            </p>
+                            <p className="text-xl font-bold text-green-700">
+                                {totalRestocks}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                {recentInventoryMovements.length === 0 ? (
+                    <div className="px-6 py-12 text-center">
+                        <FiClipboard className="mx-auto text-3xl text-slate-300" />
+                        <p className="mt-3 font-semibold text-slate-700">
+                            No inventory activity yet
+                        </p>
+                        <p className="mt-1 text-sm text-slate-500">
+                            Restock a product to see its activity recorded here.
+                        </p>
+                    </div>
+                ) : (
+                    <div className="overflow-x-auto">
+                        <table className="w-full min-w-[650px] text-left">
+                            <thead className="bg-slate-50">
+                                <tr>
+                                    <th className="px-6 py-4 text-sm font-semibold text-slate-600">
+                                        Product
+                                    </th>
+                                    <th className="px-6 py-4 text-sm font-semibold text-sate-600">
+                                        Activity
+                                    </th>
+                                    <th className="px-6 py-4 text-sm font-semibold text-slate-600">
+                                        Quantity
+                                    </th>
+                                    <th className="px-6 py-4 text-sm font-semibold text-slate-600">
+                                        Stock Change
+                                    </th>
+                                    <th className="px-6 py-4 text-sm font-semibold text-slate-600">
+                                        Date
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-100">
+                                {recentInventoryMovements.map((movement) => (
+                                    <tr
+                                        key={movement.id}
+                                        className="hover:bg-slate-50 transition"
+                                    >
+                                        <td className="px-6 py-4">
+                                            <p className="font-semibold text-slate-900">
+                                                {movement.productName}
+                                            </p>
+                                            <p className="text-xs text-slate-400 mt-1">
+                                                Product ID: {movement.productId}
+                                            </p>
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            <span className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${
+                                                movement.type === "Restock"
+                                                    ? "bg-green-100 text-green-700"
+                                                    : movement.type === "Slate"
+                                                    ? "bg-blue-100 text-blue-700"
+                                                    : "bg-slate-100 text-slate-700"
+                                            }`}>
+                                                {movement.type}
+                                            </span>
+                                        </td>
+                                        <td className={`px-6 py-4 font-semibold ${
+                                            movement.type === "Restock"
+                                                ? "text-green-700"
+                                                : "text-slate-700"
+                                        }`}>
+                                            {movement.type === "Restock" ? "+" : "-"}
+                                            {movement.quantity}
+                                        </td>
+                                        <td className="px-6 py-4 text-sm tex-slate-600">
+                                            {movement.stockBefore} -{">"} {movement.stockAfter}
+                                        </td>
+                                        <td className="px-6 py-4 text-sm text-slate-500 whitespace-nowrap">
+                                            {movement.date
+                                                ? new Date(movement.date).toLocaleDateString()
+                                                : "-"
+                                            }
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                )
+            }
             </div>
 
         </div>

@@ -203,6 +203,61 @@ const useProductStore = create(
                 }
             ],
 
+            inventoryHistory: [],
+
+            restockProduct: (productId, quantity, details = {}) => {
+                const amount = Number(quantity)
+
+                if (!Number.isInteger(amount) || amount <= 0) {
+                    return false
+                }
+
+                let success = false
+
+                set((state) => {
+                    const product = state.products.find(
+                        (item) => String(item.id) === String(productId)
+                    )
+
+                    if (!product || !Number.isFinite(Number(product.stock))) {
+                        return state
+                    }
+
+                    const stockBefore = Number(product.stock)
+                    const stockAfter = stockBefore + amount
+
+                    success = true
+
+                    const movement = {
+                        id: crypto.randomUUID(),
+                        productId: product.id,
+                        productName: product.name,
+                        type: "Restock",
+                        quantity: amount,
+                        stockBefore,
+                        stockAfter,
+                        date: new Date().toISOString(),
+                        supplier: details.supplier?.trim() || "",
+                        reference: details.reference?.trim() || "",
+                        notes: details.notes?.trim() || "", 
+                    }
+
+                    return {
+                        products: state.products.map((item) =>
+                            String(item.id) === String(productId)
+                                ? {...item, stock: stockAfter}
+                                : item
+                        ),
+                        inventoryHistory: [
+                            movement,
+                            ...(state.inventoryHistory ?? []),
+                        ],
+                    }
+                })
+
+                return success
+            },
+
             addProduct: (product) =>
                 set((state) => ({
                     products: [
@@ -281,6 +336,10 @@ const useProductStore = create(
             },
 
             increaseStock: (items) => {
+                if (!Array.isArray(items) || items.length === 0) {
+                    return false
+                }
+
                 let success = false
 
                 set((state) => {
@@ -327,7 +386,7 @@ const useProductStore = create(
             },
 
             setLowStockLevel: (productId, level) => {
-                if (!Number.isIntegre(level) || level < 0) {
+                if (!Number.isInteger(level) || level < 0) {
                     return false
                 }
 
@@ -389,6 +448,9 @@ const useProductStore = create(
                             product.lowStockLevel ??
                             defaultLowStockLevel,
                     })),
+                    inventoryHistory: Array.isArray(persisted.inventoryHistory)
+                        ? persisted.inventoryHistory
+                        : [],
                 }
             },
         }

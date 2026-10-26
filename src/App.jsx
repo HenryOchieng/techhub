@@ -26,6 +26,7 @@ import AdminOrders from "./pages/admin/AdminOrders";
 import AdminProducts from "./pages/admin/AdminProducts"
 import AdminCustomers from "./pages/admin/AdminCustomers";
 import AdminCategories from "./pages/admin/AdminCategories";
+import AdminInventoryHistory from "./pages/admin/AdminInventoryHistory";
 
 function App() {
   return (
@@ -58,6 +59,7 @@ function App() {
           <Route path="products" element={<AdminProducts />}/>
           <Route path="customers" element={<AdminCustomers />}/>
           <Route path="categories" element={<AdminCategories />}/>
+          <Route path="/admin/inventory-history" element={<AdminInventoryHistory />} />
         </Route>
     </Routes>
   )
