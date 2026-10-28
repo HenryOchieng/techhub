@@ -79,28 +79,33 @@ function AdminProducts() {
         return Number(product.stock ?? 0) <= 0
     })
 
-    const getStockStyle = (stock) => {
-        if (stock === 0) {
-            return "bg-red-100 text-red-700"
-        }
+    const getStockStatus = (product) => {
+        const stock = Number(product.stock ?? 0)
+        const level = Number(product.lowStockLevel ?? 5)
 
-        if (stock <= 5) {
-            return "bg-yellow-100 text-yellow-700"
-        }
-
-        return "bg-green-100 text-green-700"
-    }
-
-    const getStockStatus = (stock) => {
-        if (stock === 0) {
+        if (!Number.isFinite(stock) || stock <= 0) {
             return "Out of Stock"
         }
 
-        if (stock <= 5) {
+        if (stock <= level) {
             return "Low Stock"
         }
 
         return "In Stock"
+    }
+
+    const getStockStyle = (product) => {
+        const status = getStockStatus(product)
+
+        if (status === "Out of Stock") {
+            return "bg-red-100 text-red-700"
+        }
+
+        if (status === "Low Stock") {
+            return "bg-yellow-100 text-yellow-700"
+        }
+
+        return "bg-green-100 text-green-700"
     }
 
     const restockProduct = useProductStore(
@@ -263,6 +268,52 @@ function AdminProducts() {
                 </button>
             </div>
 
+            {(lowStockProducts.length > 0 || outOfStockProducts.length > 0) && (
+                <div className="mb-6 space-y-3">
+                    {outOfStockProducts.length > 0 && (
+                        <div className="flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 p-4">
+                            <FiXCircle className="mt-0.5 shrink-0 text-red-600" size={20} />
+                            <div>
+                                <p className="font-semibold text-red-800">
+                                    Out-of-stock alert
+                                </p>
+                                <p className="mt-1 text-sm text-red-700">
+                                    {outOfStockProducts.length} product(s) are out of stock.
+                                </p>
+                                <button
+                                    type="button"
+                                    onClick={() => setStockFilter("Out of Stock")}
+                                    className="mt-2 text-sm font-semibold text-red-800 underline"
+                                >
+                                    View unavailable products
+                                </button>
+                            </div>
+                        </div>
+                    )}
+
+                    {lowStockProducts.length > 0 && (
+                        <div className="flex items-start gap-3 rounded-xl border border-yellow-200 bg-yellow-50 p-4">
+                            <FiAlertTriangle className="mt-0.5 shrink-0 text-yellow-700" size={20} />
+                            <div>
+                                <p className="font-semibold text-yellow-800">
+                                    Low-stock alert
+                                </p>
+                                <p className="mt-1 text-sm text-yellow-700">
+                                    {lowStockProducts.length} product(s) need restocking.
+                                </p>
+                                <button
+                                    type="button"
+                                    onClick={() => setStockFilter("Low Stock")}
+                                    className="mt-2 text-sm font-semibold text-yellow-800 underline"
+                                >
+                                    View low-stock products
+                                </button>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            )}
+
             {stockFilter !== "All" && (
                 <div className="flex items-center justify-between mb-4">
                     <p className="text-sm text-slate-600">
@@ -392,10 +443,10 @@ function AdminProducts() {
                                     <td className="px-6 py-5">
                                         <span
                                             className={`px-3 py-1 rounded-full text-xs font-semibold ${getStockStyle(
-                                                product.stock
+                                                product
                                             )}`}
                                         >
-                                            {getStockStatus(product.stock)}
+                                            {getStockStatus(product)}
                                         </span>
                                     </td>
 
@@ -562,15 +613,10 @@ function AdminProducts() {
                                         </p>
                                         <span
                                             className={`inline-block mt-1 px-3 rounded-full text-xs font-semibold ${getStockStyle(
-                                                selectedProduct.stock
+                                                selectedProduct
                                             )}`}
                                         >
-                                            {selectedProduct.stock === 0
-                                                ? "Out of Stock"
-                                                : selectedProduct.stock <= 5
-                                                    ? "Low Stock"
-                                                    : "In Stock"
-                                            }
+                                            {getStockStatus(selectedProduct)}
                                         </span>
                                     </div>
                                 </div>

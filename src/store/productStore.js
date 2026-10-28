@@ -369,7 +369,7 @@ const useProductStore = create(
                 return success
             },
 
-            recordOrderCancellation: (orderId, fallbackItems = []) => {
+            recordOrderCancellation: (orderId) => {
                 if (orderId == null || String(orderId).trim() === "") {
                     return false
                 }
@@ -397,14 +397,7 @@ const useProductStore = create(
                             String(movement.orderId) === orderKey
                     )
 
-                    const movementsToRestore = saleMovements.length > 0
-                        ? saleMovements
-                        : normalizeIntentoryItems(fallbackItems)?.map(
-                            (item) => ({
-                                productId: item.id,
-                                quantity: item.quantity,
-                            })
-                        )
+                    const movementsToRestore = saleMovements.length > 0 ? saleMovements : null
 
                     if (!movementsToRestore?.length) {
                         return state

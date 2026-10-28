@@ -52,10 +52,12 @@ function Payment() {
         (state) => state.createOrder
     )
 
-    const [isProcessing, setIsProcessing] = useState(false)
+    const updatePaymentStatus = useOrderStore(
+        (state) => state.updatePaymentStatus
+    )
 
-    //const decreaseStock = useProductStore((state) => state.decreaseStock)
-    //console.log("decreaseStock:", decreaseStock)
+    const [isProcessing, setIsProcessing] = useState(false)
+    const [activeMpesaOrderNumber, setActiveMpesaOrderNumber] = useState(null)
 
     const isPaymentValid = () => {
         if (!paymentMethod) {
@@ -81,20 +83,103 @@ function Payment() {
         return false
     }
 
+    const buildOrder = () => {
+        const now = new Date().toISOString()
+
+        const orderNumber =
+            `ORD-${new Date().getFullYear()}-${Date.now().toString() .slice(-6)}`
+
+        //const isCashOnDelivery = paymentMethod === "Cash On Delivery"
+
+        return {
+            id: orderNumber,
+            orderNumber,
+            customer: `${shippingDetails.firstName ?? ""} ${shippingDetails.lastName ?? ""}`.trim(),
+            customerName: `${shippingDetails.firstName ?? ""} ${shippingDetails.lastName ?? ""}`.trim(),
+            email: shippingDetails.email ?? "",
+            phone: shippingDetails.phone ?? "",
+            items: cart,
+            shippingDetails,
+            paymentMethod,
+            mpesaNumber: paymentMethod === "M-Pesa" ? mpesaNumber : null,
+            subtotal,
+            shipping,
+            total,
+            status: "Pending",
+            date: now,
+            order: now,
+            orderDate: now,
+            createdAt: now,
+            stockDeducted: true,
+            stockRestored: false,
+        }
+    }
+
     const handleMpesaPayment = async () => {
-        if (!mpesaNumber.trim() || mpesaStatus === "processing") {
+        if (
+            !mpesaNumber.trim() ||
+            mpesaStatus === "processing" ||
+            isProcessing
+        ) {
             return
         }
 
         setMpesaStatus("processing")
+        setIsProcessing(true)
 
         try {
+            let orderNumber = activeMpesaOrderNumber
+
+            if (!orderNumber) {
+                const order = buildOrder()
+                const created = createOrder(order)
+
+                if (created !== true) {
+                    setMpesaStatus("failed")
+                    toast.error("Unable to create order. Check stock availability.")
+                    return
+                }
+
+                orderNumber = order.orderNumber
+                setActiveMpesaOrderNumber(orderNumber)
+            } else {
+                const reset = updatePaymentStatus(
+                    orderNumber,
+                    "Pending"
+                )
+
+                if (!reset) {
+                    setMpesaStatus("failed")
+                    toast.error("Unable to retry payment for this order.")
+                    return
+                }
+            }
+
             await new Promise((resolve) => setTimeout(resolve, 2000))
 
+            if (mpesaNumber.trim().endsWith("999")) {
+                updatePaymentStatus(orderNumber, "Failed")
+                setMpesaStatus("failed")
+                toast.error("Simulated payment failure.")
+                return
+            }
+
+            const paid = updatePaymentStatus(orderNumber, "Paid")
+
+            if (!paid) {
+                setMpesaStatus("failed")
+                toast.error("Payment success. Order status could not be updated.")
+                return
+            }
+
             setMpesaStatus("success")
+            toast.success("Simulated payment successful.")
         } catch (error) {
             console.error("M-Pesa payment error:", error)
             setMpesaStatus("failed")
+            toast.error("Payment simulation failed. Please retry.")
+        } finally {
+            setIsProcessing(false)
         }
     }
 
@@ -106,13 +191,26 @@ function Payment() {
             return
         }
 
-        if (
+        if (paymentMethod === "M-Pesa") {
+            if (mpesaStatus !== "success" || !activeMpesaOrderNumber) {
+                toast.error("Please complete the M-PESA payment first.")
+                return
+            }
+
+            clearCart()
+            clearCheckout()
+            navigate("/order-success")
+            return
+        }
+
+       /* if (
             paymentMethod === "M-Pesa" &&
             mpesaStatus !== "success"
         ) {
-            toast.error("Please send the M-Pesa peyment request first.")
+            toast.error("Please send the M-Pesa payment request first.")
             return
-        }
+        }*/
+       
 
         setIsProcessing(true)
 
@@ -253,7 +351,7 @@ function Payment() {
                                         Payment request failed.
                                     </p>
                                     <p className="text-sm text-red-600 mt-1">
-                                        Please check the phone number and try again.
+                                        Payment was not completed. You can retry without losing your cart.
                                     </p>
                                 </div>
                             )}
