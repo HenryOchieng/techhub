@@ -41,11 +41,63 @@ const useOrderStore = create(
             orders: [],
             currentOrder: null,
 
-            createOrder: (order) =>
+            createOrder: (order) => {
+                const orderKey = getOrderKey(order)
+
+                if (
+                    !orderKey ||
+                    orderKey === "undefined" ||
+                    !Array.isArray(order.items) ||
+                    order.items.length === 0
+                ) {
+                    console.error("Invalid order data.")
+                    return false
+                }
+
+                const existingOrder = get().orders.find(
+                    (item) => getOrderKey(item) === orderKey
+                )
+
+                if (existingOrder) {
+                    console.warn("Duplicate order prevented:", orderKey)
+                    return false
+                }
+
+                const productStore = useProductStore.getState()
+
+                const salesAlreadyRecorded = productStore.inventoryHistory?.some(
+                    (movement) =>
+                        movement.type === "Sale" &&
+                        String(movement.orderId) === orderKey
+                )
+
+                if (!salesAlreadyRecorded) {
+                    const recorded = useProductStore.getState().recordSale(
+                        orderKey,
+                        order.items
+                    )
+
+                    if (!recorded) {
+                        console.error("Order creation: stock deduction failed.",
+                            orderKey
+                        )
+                        return false
+                    }
+                }
+
+                const orderWithInventory = {
+                    ...order,
+                    stockDeducted: true,
+                    stockRestored: false,
+                }
+
                 set((state) => ({
-                    orders: [...state.orders, order],
-                    currentOrder: order,
-                })),
+                    orders: [...state.orders, orderWithInventory],
+                    currentOrder: orderWithInventory,
+                }))
+
+                return true
+            },
 
             updateOrderStatus: (orderNumber, status) => {
                 const order = get().orders.find(
@@ -68,7 +120,6 @@ const useOrderStore = create(
                     return false
                 }
 
-                // Cancellation uses the existing stock-restoration logic.
                 if (status === "Cancelled") {
                     return get().cancelOrder(orderNumber)
                 }
@@ -221,21 +272,18 @@ const useOrderStore = create(
                     order.stockDeducted === true &&
                     order.stockRestored !== true
                 ) {
-                    const increaseStock =
-                        useProductStore.getState().increaseStock
+                    const restored = useProductStore
+                        .getState()
+                        .recordOrderCancellation(
+                            getOrderKey(order),
+                            order.items
+                        )
 
-                    if (typeof increaseStock !== "function") {
-                        console.error("increaseStock is unavailable.")
-                        return false
-                    }
-
-                    const restored = increaseStock(order.items)
-
-                    if (restored !== true) {
-                        console.error("Stock restoration failed.", {
-                            orderItems: order.items,
-                            restored,
-                        })
+                    if (!restored) {
+                        console.error(
+                            "Cancellation failed: inventory restoration was unsuccessful.",
+                            orderNumber
+                        )
                         return false
                     }
                 }

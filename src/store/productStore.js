@@ -37,6 +37,34 @@ export const getInventoryStatus = (product) => {
     return "In Stock"
 }
 
+const normalizeIntentoryItems = (items) => {
+    if (!Array.isArray(items) || items.length === 0) {
+        return null
+    }
+
+    const quantities = new Map()
+
+    for (const item of items) {
+        const productId = item.id ?? item.productId
+        const quantity = Number(item.quantity)
+
+        if (
+            productId === null ||
+            !Number.isInteger(quantity) ||
+            quantity <= 0
+        ) {
+            return null
+        }
+
+        const key = String(productId)
+        quantities.set(key, (quantities.get(key) ?? 0) + quantity)
+    }
+
+    return Array.from(quantities, ([id, quantity]) => ({
+        id, quantity
+    }))
+}
+
 const useProductStore = create(
     persist(
         (set, get) => ({
@@ -258,6 +286,257 @@ const useProductStore = create(
                 return success
             },
 
+            recordSale: (orderId, items) => {
+                if (orderId == null || String(orderId).trim() === "") {
+                    return false
+                }
+
+                const normalizedItems = normalizeIntentoryItems(items)
+
+                if (!normalizedItems) {
+                    return false
+                }
+
+                let success = false
+
+                set((state) => {
+                    const history = state.inventoryHistory ?? []
+                    const orderKey = String(orderId)
+
+                    const alreadyRecorded = history.some(
+                        (movement) =>
+                            movement.type === "Sale" &&
+                            String(movement.orderId) === orderKey
+                    )
+
+                    if (alreadyRecorded) {
+                        return state
+                    }
+
+                    const movements = []
+                    const stockChanges = new Map()
+                    const date = new Date().toISOString()
+
+                    for (const item of normalizedItems) {
+                        const product = state.products.find(
+                            (product) => String(product.id) === item.id
+                        )
+
+                        if (
+                            !product ||
+                            !Number.isFinite(Number(product.stock)) ||
+                            Number(product.stock) < item.quantity
+                        ) {
+                            return state
+                        }
+
+                        const stockBefore = Number(product.stock)
+                        const stockAfter = stockBefore - item.quantity
+
+                        stockChanges.set(item.id, stockAfter)
+
+                        movements.push({
+                            id: crypto.randomUUID(),
+                            orderId: orderKey,
+                            productId: product.id,
+                            productName: product.name,
+                            type: "Sale",
+                            quantity: item.quantity,
+                            stockBefore,
+                            stockAfter,
+                            date,
+                            notes: `Stock deducted for ${orderKey}`,
+                        })
+                    }
+
+                    success = true
+
+                    return {
+                        products: state.products.map((product) => {
+                            const stockAfter = stockChanges.get(String(product.id))
+
+                            return stockAfter === undefined
+                                ? product
+                                : { ...product, stock: stockAfter }
+                        }),
+                        inventoryHistory: [
+                            ...movements,
+                            ...history,
+                        ],
+                    }
+                })
+
+                return success
+            },
+
+            recordOrderCancellation: (orderId, fallbackItems = []) => {
+                if (orderId == null || String(orderId).trim() === "") {
+                    return false
+                }
+
+                let success = false
+
+                set((state) => {
+                    const history = state.inventoryHistory ?? []
+                    const orderKey = String(orderId)
+
+                    const alreadyCancelled = history.some(
+                        (movement) => 
+                            movement.type === "Order Cancellation" &&
+                            String(movement.orderId) === orderKey
+                    )
+
+                    if (alreadyCancelled) {
+                        success = true
+                        return state
+                    }
+
+                    const saleMovements = history.filter(
+                        (movement) =>
+                            movement.type === "Sale" &&
+                            String(movement.orderId) === orderKey
+                    )
+
+                    const movementsToRestore = saleMovements.length > 0
+                        ? saleMovements
+                        : normalizeIntentoryItems(fallbackItems)?.map(
+                            (item) => ({
+                                productId: item.id,
+                                quantity: item.quantity,
+                            })
+                        )
+
+                    if (!movementsToRestore?.length) {
+                        return state
+                    }
+
+                    const stockChanges = new Map()
+                    const cancellationMovements = []
+                    const date = new Date().toISOString()
+
+                    for (const movement of movementsToRestore) {
+                        const key = String(movement.productId)
+                        const product = state.products.find(
+                            (item) => String(item.id) === key
+                        )
+
+                        if (
+                            !product || 
+                            !Number.isInteger(Number(movement.quantity)) ||
+                            Number(movement.quantity) <= 0
+                        ) {
+                            return state
+                        }
+
+                        const stockBefore =
+                            stockChanges.get(key) ?? Number(product.stock)
+
+                        const quantity = Number(movement.quantity)
+                        const stockAfter = stockBefore + quantity
+
+                        stockChanges.set(key, stockAfter)
+
+                        cancellationMovements.push({
+                            id: crypto.randomUUID(),
+                            orderId: orderKey,
+                            productId: product.id,
+                            productName: product.name,
+                            type: "Order Cancellation",
+                            quantity,
+                            stockBefore,
+                            stockAfter,
+                            date,
+                            note: `Stock restored for cancelled order ${orderKey}`,
+                        })
+                    }
+
+                    success = true
+
+                    return {
+                        products: state.products.map((product) => {
+                            const stockAfter = stockChanges.get(
+                                String(product.id)
+                            )
+
+                            return stockAfter === undefined
+                                ? product
+                                : { ...product, stock: stockAfter }
+                        }),
+                        inventoryHistory: [
+                            ...cancellationMovements,
+                            ...history,
+                        ],
+                    }
+                })
+
+                return success
+            },
+
+            adjustStock: (productId, quantity, direction, details = {}) => {
+                const amount = Number(quantity)
+
+                if (
+                    !Number.isInteger(amount) || 
+                    amount <= 0 ||
+                    !["increase", "decrease"].includes(direction)
+                ) {
+                    return false
+                }
+
+                let success = false
+
+                set((state) => {
+                    const product = state.products.find(
+                        (item) => String(item.id) === String(productId)
+                    )
+
+                    if (!product || !Number.isFinite(Number(product.stock))) {
+                        return state
+                    }
+
+                    const stockBefore = Number(product.stock)
+
+                    if (direction === "decrease" && stockBefore < amount) {
+                        return state
+                    }
+
+                    const stockAfter =
+                        direction === "increase"
+                            ? stockBefore + amount
+                            : stockBefore - amount
+
+                        const movement = {
+                            id: crypto.randomUUID(),
+                            productId: product.id,
+                            productName: product.name,
+                            type: "Adjustment",
+                            adjustmentType: direction,
+                            quantity: amount,
+                            stockBefore,
+                            stockAfter,
+                            date: new Date().toISOString(),
+                            reason: details.reason?.trim() || "",
+                            reference: details.reference?.trim() || "",
+                        }
+
+                        success = true
+
+                        return {
+                            products: state.products.map((item) =>
+                                String(item.id) === String(productId)
+                                    ? {...item, stock:stockAfter}
+                                    : item
+                            ),
+                            inventoryHistory: [
+                                movement,
+                                ...(state.inventoryHistory ?? []),
+                            ],
+                        }
+                })
+
+                return success
+            },
+
             addProduct: (product) =>
                 set((state) => ({
                     products: [
@@ -344,7 +623,7 @@ const useProductStore = create(
 
                 set((state) => {
                     if (!Array.isArray(items) || items.length === 0) {
-                        return true
+                        return state
                     }
 
                     const validItems = items.every((item) => {

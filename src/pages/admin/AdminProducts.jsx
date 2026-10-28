@@ -23,6 +23,11 @@ function AdminProducts() {
     const [stockFilter, setStockFilter] = useState("All")
     const [restockingProduct, setRestockingProduct] = useState(null)
     const [restockQuantity, setRestockQuantity] = useState(1)
+    const [adjustingProduct, setAdjustingProduct] = useState(null)
+    const [adjustmentQuantity, setAdjustmentQuantity] = useState(1)
+    const [adjustmentDirection, setAdjustmentDirection] = useState("decrease")
+    const [adjustmentReason, setAdjustmentReason] = useState("Physical stock count")
+    const [adjustmentReference, setAdjustmentReference] = useState("")
 
     const products = useProductStore((state) => state.products)
 
@@ -102,6 +107,10 @@ function AdminProducts() {
         (state) => state.restockProduct
     )
 
+    const adjustStock = useProductStore(
+        (state) => state.adjustStock
+    )
+
     const handleRestock = (e) => {
         e.preventDefault()
 
@@ -124,10 +133,44 @@ function AdminProducts() {
         setRestockQuantity(1)
     }
 
+    const handleStockAdjustment = (e) => {
+        e.preventDefault()
+
+        const quantity = Number(adjustmentQuantity)
+
+        if (
+            !adjustingProduct ||
+            !Number.isInteger(quantity) ||
+            quantity <= 0 ||
+            !adjustmentReason.trim()
+        ) {
+            return
+        }
+
+        const success = adjustStock(
+            adjustingProduct.id,
+            quantity,
+            adjustmentDirection,
+            {
+                reason: adjustmentReason,
+                reference: adjustmentReference,
+            }
+        )
+
+        if (!success) {
+            alert("Unable to adjust stock. Check the quantity and current stock level.")
+            return
+        }
+
+        setAdjustingProduct(null)
+        setAdjustmentQuantity(1)
+        setAdjustmentDirection("decrease")
+        setAdjustmentReason("Physical stock count")
+        setAdjustmentReference("")
+    }
+
     return (
         <div className="p-6 lg:p-8">
-
-            {/* Page Header */}
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div>
                     <p className="text-blue-600  font-semibold text-sm">
@@ -390,6 +433,20 @@ function AdminProducts() {
                                                 title="Restock Product"
                                             >
                                                 Restock
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    setAdjustingProduct(product)
+                                                    setAdjustmentQuantity(1)
+                                                    setAdjustmentDirection("decrease")
+                                                    setAdjustmentReason("Physical stock count")
+                                                    setAdjustmentReference("")
+                                                }}
+                                                className="px-3 py-2 text-sm font-semibold text-orange-700 bg-orange-50 hover:bg-orange-100 rounded-lg transition"
+                                                title="Adjust stock"
+                                            >
+                                                Adjust stock
                                             </button>
                                         </div>
                                     </td>
@@ -968,6 +1025,129 @@ function AdminProducts() {
                                     className="rounded-xl bg-green-600 px-5 py-3 font-semibold text-white hover:bg-green-700"
                                 >
                                     Confirm Restock
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+
+            {adjustingProduct && (
+                <div className="fixed inset-0 z-50 flex items-center jutify-center bg-black/50 p-4">
+                    <div className="w-full max-w-md rounded-2xl bg-white shadow-xl">
+                        <div className="flex items-center justify-between border-b border-sate-200 p-5">
+                            <div>
+                                <h2 className="text-xl font-bold text-slate-900">
+                                    Adjust Stock
+                                </h2>
+                                <p className="mt-1 text-sm text-slate-500">
+                                    Correct the recorded inventory quantity
+                                </p>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => setAdjustingProduct(null)}
+                                className="rounded-lg p-2 text-slate-500 hover:bg-slate-100"
+                                aria-label="Close stock adjustment"
+                            >
+                                <FiX size={20} />
+                            </button>
+                        </div>
+                        <form
+                            onSubmit={handleStockAdjustment}
+                            className="space-y5 p-5"
+                        >
+                            <div>
+                                <p className="font-semibold text-slate-800">
+                                    {adjustingProduct.name}
+                                </p>
+                                <p className="mt-1 text-sm text-slate-500">
+                                    Current stock: {adjustingProduct.stock ?? 0} units
+                                </p>
+                            </div>
+                            <div>
+                                <label className="mb-2 block text-sm font-semibold text-slate-700">
+                                    Adjustment direction
+                                </label>
+                                <select
+                                    value={adjustmentDirection}
+                                    onChange={(e) => setAdjustmentDirection(e.target.value)}
+                                    className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3"
+                                >
+                                    <option value="decrease">Decrease stock (-)</option>
+                                    <option value="increase">Increase stock (+)</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label
+                                    htmlFor="adjustmentQuantity"
+                                    className="mb-2 block text-sm font-semibold text-slate-700"
+                                >
+                                    Quantity
+                                </label>
+                                <input
+                                    id="adjustmentQuantity"
+                                    type="number"
+                                    min="1"
+                                    step="1"
+                                    required
+                                    value={adjustmentQuantity}
+                                    onChange={(e) => setAdjustmentQuantity(e.target.value)}
+                                    className="w-full rounded-xl border border-slate-200 px-4 py-3"
+                                />
+                            </div>
+                            <div className="rounded-xl bg-orange-50 p-4">
+                                <p className="text-sm text-orange-800">
+                                    New stock level
+                                </p>
+                                <p className="mt-1 text-2xl font-bold text-orange-700">
+                                    {Number(adjustingProduct.stock ?? 0) +
+                                        (adjustmentDirection === "increase" ? 1 : -1) *
+                                        (Number(adjustmentQuantity) || 0)} units
+                                </p>
+                            </div>
+                            <div>
+                                <label className="mb-2 block text-sm font-semibold text-slate-700">
+                                    Reason
+                                </label>
+                                <select
+                                    value={adjustmentReason}
+                                    onChange={(e) => setAdjustmentReason(e.target.value)}
+                                    required
+                                    className="w-full rounded-xl bordr border-slate-200 bg-white px-4 py-3"
+                                >
+                                    <option value="Physical stock count">Physical stock count</option>
+                                    <option value="Damaged items">Damaged items</option>
+                                    <option value="Lost or missing items">Lost or missing items</option>
+                                    <option value="Data entry correction">Data entry correction</option>
+                                    <option value="Other">Other</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label className="mb-2 block text-sm font-semibold text-slate-700">
+                                    Reference (optional)
+                                </label>
+                                <input
+                                    type="text"
+                                    value={adjustmentReference}
+                                    onChange={(e) => setAdjustmentReference(e.target.value)}
+                                    placeholder="e.g. STOCK-ADJ-001"
+                                    className="w-full rounded-xl border border-slate-200 px-4 py-3"
+                                />
+                            </div>
+                            <div className="flex justify-end gap-3">
+                                <button
+                                    type="button"
+                                    onClick={() => setAdjustingProduct(null)}
+                                    className="rounded-xl border border-slate-200 px-4 py-3 font-semibold text-slate-700 hover:bg-slate-50"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="submit"
+                                    className="rounded-xl bg-orange-600 px-5 py-3 font-semibold text-white hover:bg-orange-700"
+                                >
+                                    Confirm Adjustment
                                 </button>
                             </div>
                         </form>

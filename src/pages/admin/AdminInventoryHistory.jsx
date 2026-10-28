@@ -212,8 +212,13 @@ function AdminInventoryHistory() {
                                             </span>
                                         </td>
 
-                                        <td className="px-5 py-4 font-semibold text-green-700">
-                                            +{movement.quantity}
+                                        <td className={`px-5 py-4 font-semibold ${
+                                            movement.type === "Sale" ||(movement.type === "Adjustment" && movement.adjustmentType === "decrease")
+                                                ? "text-red-700"
+                                                : "text-green-700"
+                                        }`}>
+                                            {movement.type === "Sale" || (movement.type === "Adjustment" && movement.adjustmentType === "decrease") ? "-" : "+"}
+                                            {movement.quantity}
                                         </td>
 
                                         <td className="px-5 py-4 text-slate-600">

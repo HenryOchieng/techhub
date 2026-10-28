@@ -255,7 +255,7 @@ function AdminDashboard() {
                 <div className="px-6 py-5 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                     <div>
                         <h2 className="text-lg font-bold text-slate-900">
-                            Inventory Hiistory
+                            Inventory History
                         </h2>
                         <p className="text-sm text-slate-500 mt-1">
                             Recent changes to your product stock levels
@@ -338,11 +338,11 @@ function AdminDashboard() {
                                             </span>
                                         </td>
                                         <td className={`px-6 py-4 font-semibold ${
-                                            movement.type === "Restock"
-                                                ? "text-green-700"
-                                                : "text-slate-700"
+                                            movement.type === "Sale" || (movement.type === "Adjustment" && movement.adjustmentType === "decrease")
+                                                ? "text-red-700"
+                                                : "text-green-700"
                                         }`}>
-                                            {movement.type === "Restock" ? "+" : "-"}
+                                            {movement.type === "Sale" || (movement.type === "Adjustment" && movement.adjustmentType === "decrease") ? "-" : "+"}
                                             {movement.quantity}
                                         </td>
                                         <td className="px-6 py-4 text-sm tex-slate-600">

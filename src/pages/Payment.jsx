@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom"
 import useOrderStore from "../store/orderStore"
 import useCheckoutStore from "../store/checkoutStore"
 import useCartStore from "../store/cartStore"
-import useProductStore from "../store/productStore"
+//import useProductStore from "../store/productStore"
 import PaymentCard from "../components/checkout/PaymentCard"
 import {
     FiSmartphone,
@@ -54,7 +54,7 @@ function Payment() {
 
     const [isProcessing, setIsProcessing] = useState(false)
 
-    const decreaseStock = useProductStore((state) => state.decreaseStock)
+    //const decreaseStock = useProductStore((state) => state.decreaseStock)
     //console.log("decreaseStock:", decreaseStock)
 
     const isPaymentValid = () => {
@@ -82,15 +82,14 @@ function Payment() {
     }
 
     const handleMpesaPayment = async () => {
-        if (!mpesaNumber.trim()) return
-        
-        setMpesaNumber("processing")
+        if (!mpesaNumber.trim() || mpesaStatus === "processing") {
+            return
+        }
+
+        setMpesaStatus("processing")
 
         try {
-            
-            await new Promise((resolve) =>
-                setTimeout(resolve, 2000)
-            )
+            await new Promise((resolve) => setTimeout(resolve, 2000))
 
             setMpesaStatus("success")
         } catch (error) {
@@ -107,19 +106,17 @@ function Payment() {
             return
         }
 
+        if (
+            paymentMethod === "M-Pesa" &&
+            mpesaStatus !== "success"
+        ) {
+            toast.error("Please send the M-Pesa peyment request first.")
+            return
+        }
+
         setIsProcessing(true)
 
         try {
-            const stockUpdated = decreaseStock(cart)
-
-            if (!stockUpdated) {
-                toast.error(
-                    "Unable to place order. Check product availability."
-                )
-                setIsProcessing(false)
-                return
-            }
-
             const now = new Date().toISOString()
 
             const orderNumber =
@@ -156,7 +153,12 @@ function Payment() {
                 stockRestored: false
             }
 
-            createOrder(order)
+            const created = createOrder(order)
+
+            if (created !== true) {
+                toast.error("Unable to place order. Check stock availability and try again.")
+                return
+            }
 
             clearCart()
             clearCheckout()
