@@ -17,7 +17,7 @@ import Payment from "./pages/Payment"
 import OrderSuccess from "./pages/OrderSuccess"
 import Orders from "./pages/Orders"
 import OrderDetails from "./pages/OrderDetails"
-import Wishlist from "./pages/wishlist";
+import Wishlist from "./pages/Wishlist";
 import Account from "./pages/Account"
 
 import AdminLayout from "./components/admin/AdminLayout"
