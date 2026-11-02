@@ -6,33 +6,55 @@ const useCartStore = create(
     persist(
         (set) => ({
             cart: [],
-            addToCart: (product) => 
+            addToCart: (product, quantity = 1) => 
                 set((state) => {
+                    const requestedQuantity = Math.max(1, Math.floor(Number(quantity) || 1))
+
+                    const stock = Number(product.stock)
+
+                    if (Number.isFinite(stock) && stock <= 0) {
+                        toast.error(`${product.name} is out of stock`)
+                        return state
+                    }
+
                     const existing = state.cart.find(
                         item => item.id === product.id
                     )
 
+                    const currentQuantity = existing ? Number(existing.quantity) || 0 : 0
+
+                    const newQuantity = Number.isFinite(stock)
+                        ? Math.min(currentQuantity + requestedQuantity, stock)
+                        : currentQuantity + requestedQuantity
+
+                    const quantityAdded = newQuantity - currentQuantity
+
+                    if (quantityAdded <= 0) {
+                        toast.error(`Only ${stock} units of ${product.name} are available`)
+                        return state
+                    }
+
                     if (existing) {
-                        toast.success(`Added another ${product.name}`)
+                        toast.success(`${quantityAdded} ${product.name} added to cart`)
                         return {
                             cart: state.cart.map(item =>
                                 item.id === product.id
                                 ? {
                                     ...item,
-                                    quantity: item.quantity + 1
+                                    quantity: newQuantity
                                 }
                                 : item
                             ),
                         }
                     }
-                    toast.success(`${product.name} added to cart`)
+                    toast.success(`${quantityAdded} ${product.name} added to cart`)
 
                     return {
                         cart: [
                             ...state.cart,
                             {
                                 ...product,
-                                quantity: 1
+                                quantity: newQuantity
                             }
                         ]
                     }
@@ -71,10 +93,16 @@ const useCartStore = create(
                     }),
 
                 clearCart: () => {
-                    toast.success("Cart Cleared")
-                    set({ cart: [] })
-                },
+                    set((state) => {
+                        if (state.cart.length === 0) {
+                            return state
+                        }
 
+                        toast.success("Cart Cleared")
+
+                        return { cart: []}
+                    })
+                }
         }),
         {
             name: "cart-storage"

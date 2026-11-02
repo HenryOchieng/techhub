@@ -203,15 +203,6 @@ function Payment() {
             return
         }
 
-       /* if (
-            paymentMethod === "M-Pesa" &&
-            mpesaStatus !== "success"
-        ) {
-            toast.error("Please send the M-Pesa payment request first.")
-            return
-        }*/
-       
-
         setIsProcessing(true)
 
         try {

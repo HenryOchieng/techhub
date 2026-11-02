@@ -83,7 +83,7 @@ function OrderSuccess() {
                         type: "spring",
                         stiffness: 200
                     }}
-                    className="w-20 h-20 mx-auto rounded-full bg-green-100 flex iteme-center justify-center"
+                    className="w-20 h-20 mx-auto rounded-full bg-green-100 flex items-center justify-center"
                 >
                     <FiCheck
                         size={42}

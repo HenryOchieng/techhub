@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { Link, useParams } from "react-router-dom"
+import { Link, useParams, useNavigate } from "react-router-dom"
 import useProductStore from "../store/productStore"
 import useCartStore from "../store/cartStore"
 import { FiHeart } from "react-icons/fi"
@@ -19,6 +19,8 @@ function ProductDetails() {
     const reviews = Array.isArray(product?.reviews) ? product.reviews : []
 
     const reviewCount = reviews.length
+
+    const navigate = useNavigate()
 
     const productImages = product 
         ? (
@@ -207,7 +209,13 @@ function ProductDetails() {
                             : `Add ${quantity} to Cart`
                         }
                     </button>
-                    <button className="w-full mt-4 border border-blue-600 text-blue-600 hover:bg-blue-600 hover:text-white py-4 rounded-xl font-semibold transition">
+                    <button
+                        disabled={Number(product.stock || 0) <= 0}
+                        onClick={() => {
+                            addToCart(product, quantity)
+                            navigate("/checkout")
+                        }} 
+                        className="w-full mt-4 border border-blue-600 text-blue-600 hover:bg-blue-600 hover:text-white py-4 rounded-xl font-semibold transition">
                         Buy Now
                     </button>
                     <button

@@ -1,4 +1,6 @@
-import {useQuery } from "@tanstack/react-query"
+
+import { Link } from "react-router-dom"
+import { useQuery } from "@tanstack/react-query"
 import { getCategories } from "../../api/categories"
 
 function Categories() {
@@ -21,22 +23,27 @@ function Categories() {
                 <h2 className="text-4xl font-bold text-center mb-14">
                     Shop by Category
                 </h2>
+
                 <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
                     {data.map(category => {
                         const Icon = category.icon
+
                         return (
-                            <div
+                            <Link
                                 key={category.id}
-                                className="bg-white rounded-2xl p-8 shadow hover:shadow-xl transition cursor-pointer"
+                                to={`/shop?category=${encodeURIComponent(category.name)}`}
+                                className="block bg-white rounded-2xl p-8 shadow hover:shadow-xl hover:-translate-y-1 transition cursor-pointer"
                             >
                                 <Icon className="text-blue-600 text-5xl mb-6"/>
+
                                 <h3 className="text-2xl font-semibold">
                                     {category.name}
                                 </h3>
+
                                 <p className="text-slate-500 mt-2">
                                     {category.totalProducts} Products
                                 </p>
-                            </div>
+                            </Link>
                         )
                     })}
                 </div>
