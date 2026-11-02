@@ -1,0 +1,19 @@
+node_modules
+# Keep environment variables out of version control
+.env
+.env.*
+!.env.example
+
+# Dependencies
+node_module/
+
+# Generated Prisma Client
+src/generated/prisma
+
+# Logs
+*.log
+npm-debug.log*
+
+# Operating systen files
+.DS_Store
+Thumbs.db
