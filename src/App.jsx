@@ -2,9 +2,6 @@ import { Routes, Route } from "react-router-dom";
 
 import CustomerLayout from "./components/layout/CustomerLayout"
 
-//import Navbar from "./components/layout/Navbar"
-//import Footer from "./components/layout/Footer"
-
 import Home from "./pages/Home"
 import Shop from "./pages/Shop"
 import Categories from "./pages/Categories"

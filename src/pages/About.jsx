@@ -1,4 +1,5 @@
 import { FiShield, FiTruck, FiHeadphones, FiAward } from "react-icons/fi"
+import { Link } from "react-router-dom"
 
 function About() {
     const features = [
@@ -148,12 +149,12 @@ function About() {
                         Explore our collection of computers, accessories,
                         and other technology products.
                     </p>
-                    <a
-                        href="/shop"
+                    <Link
+                        to="/shop" 
                         className="inline-block mt-7 bg-white text-blue-600 font-semibold px-7 py-3 rounded-xl hover:bg-slate-100 transition"
                     >
                         Shop Now
-                    </a>
+                    </Link>
                 </div>
             </section>
         </div>
