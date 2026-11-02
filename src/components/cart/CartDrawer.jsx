@@ -198,10 +198,12 @@ function CartDrawer() {
                                     KSHS. {subtotal.toLocaleString()}
                                 </span>
                             </div>
-                            <Link to="/checkout">
-                                <button className="w-full mt-6 bg-blue-600 hover:bg-blue-700 text-white py-4 rounded-xl transition">
-                                    Proceed to Checkout
-                                </button>        
+                            <Link 
+                                to="/checkout"
+                                onClick={closeCart}
+                                className="block w-full mt-6 bg-blue-600 hover:blue-700 text-white py-4 rounded-xl transition text-center"
+                            >
+                                Proceed to Checkout
                             </Link>
                             <button
                                 onClick={closeCart}
