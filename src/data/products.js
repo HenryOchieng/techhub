@@ -137,7 +137,7 @@ export const products = [
         id: 4,
         name: "Samsung 27-inch IPS Monitor",
         brand: "Samsung",
-        category: "Monitors",
+        category: "Desktop Computers",
         price: 32000,
         oldPrice: null,
         rating: 4.7,

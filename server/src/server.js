@@ -1,10 +1,10 @@
-
 import "dotenv/config"
 import process from "node:process"
 import express from "express"
 import cors from "cors"
 import prisma from "./config/db.js"
 import productRoutes from "./routes/productRoutes.js"
+import categoryRoutes from "./routes/categoryRoutes.js"
 
 const app = express()
 
@@ -40,6 +40,7 @@ app.get("/api/health", async (req, res) => {
 })
 
 app.use("/api/products", productRoutes)
+app.use("/api/categories", categoryRoutes)
 
 const PORT = process.env.PORT || 5000
 

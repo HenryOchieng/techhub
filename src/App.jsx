@@ -1,4 +1,6 @@
+import { useEffect } from "react"
 import { Routes, Route } from "react-router-dom";
+import useProductStore from "./store/productStore"
 
 import CustomerLayout from "./components/layout/CustomerLayout"
 
@@ -26,6 +28,12 @@ import AdminCategories from "./pages/admin/AdminCategories";
 import AdminInventoryHistory from "./pages/admin/AdminInventoryHistory";
 
 function App() {
+  const fetchProducts = useProductStore((state) => state.fetchProducts)
+
+  useEffect(() => {
+    fetchProducts()
+  }, [fetchProducts])
+
   return (
     <Routes>
 

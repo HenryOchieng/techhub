@@ -22,18 +22,17 @@ function Shop() {
 
     const [sortBy, setSortBy] = useState("Newest")
 
-    const highestPrice = Math.max(
-        ...products.map(product => product.price)
-    )
+    const highestPrice = Math.max(0, ...products.map(product => product.price))
 
-    const [maxPrice, setMaxPrice] = useState(() => highestPrice)
+    const [maxPrice, setMaxPrice] = useState(null)
+    const activeMaxPrice = maxPrice ?? highestPrice
 
     const [minimumRating, setMinimumRating] = useState(0)
 
     const filteredProducts = products.filter((product) => {
         const matchesSearch =
             product.name.toLowerCase().includes(search.toLowerCase()) ||
-            product.brand.toLowerCase().includes(search.toLowerCase()) ||
+            (product.brand || "").toLowerCase().includes(search.toLowerCase()) ||
             product.category.toLowerCase().includes(search.toLowerCase())
 
         const matchesCategory =
@@ -44,7 +43,7 @@ function Shop() {
             selectedBrands.length === 0 || 
             selectedBrands.includes(product.brand)
 
-        const matchesPrice = product.price <= maxPrice
+        const matchesPrice = product.price <= activeMaxPrice
 
         const matchesRating = 
             minimumRating === 0 ||
@@ -187,20 +186,20 @@ function Shop() {
                                 min="0"
                                 max={highestPrice}
                                 step="5000"
-                                value={maxPrice}
+                                value={activeMaxPrice}
                                 onChange={(e) => setMaxPrice(Number(e.target.value))}
                                 className="w-full accent-blue-600"
                             />
                             <div className="flex justify-between mt-3 text-sm text-slate-600">
                                 <span>Kshs. 0</span>
-                                <span>Kshs. {maxPrice.toLocaleString()}</span>
+                                <span>Kshs. {activeMaxPrice.toLocaleString()}</span>
                             </div>
                             <div className="mt-4 bg-slate-100 rounded-xl p-3 text-center">
                                     <p className="text-sm text-slate-500">
                                         Showing products up to
                                     </p>
                                     <p className="text-xl font-bold text-blue-600">
-                                        Kshs. {maxPrice.toLocaleString()}
+                                        Kshs. {activeMaxPrice.toLocaleString()}
                                     </p>
                             </div>
                         </div>
@@ -245,7 +244,7 @@ function Shop() {
                                     setSearch("")
                                     setSelectedCategory("All")
                                     setSelectedBrands([])
-                                    setMaxPrice(highestPrice)
+                                    setMaxPrice(null)
                                     setMinimumRating(0)
                                     setSearchParams({})
                                 }}
@@ -263,7 +262,7 @@ function Shop() {
                         selectedCategory !== "All" ||
                         selectedBrands.length > 0 ||
                         minimumRating > 0 ||
-                        maxPrice < highestPrice
+                        activeMaxPrice < highestPrice
                     ) && (
                         <div className="flex flex-wrap gap-3 mb-6">
                             <h3 className="text-sm font-semibold text-slate-500 mb-3">
@@ -308,12 +307,12 @@ function Shop() {
                                 </button>
                             )}
 
-                            {maxPrice < highestPrice && (
+                            {activeMaxPrice < highestPrice && (
                                 <button
-                                    onClick={() => setMaxPrice(highestPrice)}
+                                    onClick={() => setMaxPrice(null)}
                                     className="px-3 py-1.5 bg-blue-100 rounded-full text-sm  hover:bg-blue-200 transition"
                                 >
-                                    Under Kshs.. {maxPrice.toLocaleString()}
+                                    Under Kshs.. {activeMaxPrice.toLocaleString()}
                                 </button>
                             )}
                         </div>
