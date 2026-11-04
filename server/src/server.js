@@ -5,6 +5,7 @@ import cors from "cors"
 import prisma from "./config/db.js"
 import productRoutes from "./routes/productRoutes.js"
 import categoryRoutes from "./routes/categoryRoutes.js"
+import inventoryRoutes from "./routes/inventoryRoutes.js"
 
 const app = express()
 
@@ -41,6 +42,7 @@ app.get("/api/health", async (req, res) => {
 
 app.use("/api/products", productRoutes)
 app.use("/api/categories", categoryRoutes)
+app.use("/api/inventory", inventoryRoutes)
 
 const PORT = process.env.PORT || 5000
 

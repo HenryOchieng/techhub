@@ -28,6 +28,8 @@ function AdminProducts() {
     const [adjustmentDirection, setAdjustmentDirection] = useState("decrease")
     const [adjustmentReason, setAdjustmentReason] = useState("Physical stock count")
     const [adjustmentReference, setAdjustmentReference] = useState("")
+    const [savingProduct, setSavingProduct] = useState(false)
+    const [productError, setProductError] = useState("")
 
     const products = useProductStore((state) => state.products)
 
@@ -366,6 +368,12 @@ function AdminProducts() {
                 </div>
             </div>
 
+            {productError && (
+                <div className="mb-5 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+                    {productError}
+                </div>
+            )}
+
             {/* Products Table */}
             <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
                 <div className="px-6 py-5 border-b border-slate-200">
@@ -660,12 +668,25 @@ function AdminProducts() {
 
                         {/* Form */}
                         <form
-                            onSubmit={(e) => {
+                            onSubmit={async (e) => {
                                 e.preventDefault()
 
-                                updateProduct(editingProduct)
+                                try {
+                                    setSavingProduct(true)
+                                    setProductError("")
 
-                                setEditingProduct(null)
+                                    await updateProduct(editingProduct)
+
+                                    setEditingProduct(null)
+                                } catch (error) {
+                                    setProductError(
+                                        error.response?.data?.message ||
+                                        error.message ||
+                                        "Failed to update product"
+                                    )
+                                } finally {
+                                    setSavingProduct(false)
+                                }
                             }}
                             className="p-6 space-y-6"
                         >
@@ -784,9 +805,10 @@ function AdminProducts() {
                                 </button>
                                 <button
                                     type="submit"
-                                    className="px-5 py-3 rounded-xl bg-blue-600 text-white font-semibold hover:bg-blue-700 transition"
+                                    disabled={savingProduct}
+                                    className={`px-5 py-3 rounded-xl bg-blue-600 text-white font-semibold transition ${savingProduct ? "opacity-70 cursor-not-allowed" : "hover:bg-blue-700"}`}
                                 >
-                                    Save Changes
+                                    {savingProduct ? "Saving..." : "Save Changes"}
                                 </button>
                             </div>
                         </form>
@@ -828,13 +850,14 @@ function AdminProducts() {
 
                         {/* Form */}
                         <form
-                            onSubmit={(e) => {
+                            onSubmit={async (e) => {
                                 e.preventDefault()
 
                                 const formData = new FormData(e.currentTarget)
+
                                 const newProduct = {
-                                    name: formData.get("name"),
-                                    brand: formData.get("brand"),
+                                    name: formData.get("name").trim(),
+                                    brand: formData.get("brand").trim(),
                                     category: formData.get("category"),
                                     price: Number(formData.get("price")),
                                     stock: Number(formData.get("stock")),
@@ -842,10 +865,24 @@ function AdminProducts() {
                                     reviews: [],
                                     image: null
                                 }
-                                
-                                addProduct(newProduct)
 
-                                setAddingProduct(false)
+                                try {
+                                    setSavingProduct(true)
+                                    setProductError("")
+
+                                    await addProduct(newProduct)
+
+                                    setAddingProduct(false)
+                                    e.currentTarget.reset()
+                                } catch (error) {
+                                    setProductError(
+                                        error.response?.data?.message ||
+                                        error.message ||
+                                        "Failed to create product"
+                                    )
+                                } finally {
+                                    setSavingProduct(false)
+                                }
                             }}
                             className="p-6 space-y-6"
                         >
@@ -986,11 +1023,23 @@ function AdminProducts() {
                             </button>
                             <button
                                 type="button"
-                                onClick={() => {
+                                onClick={async () => {
+                                    try {
+                                        setSavingProduct(true)
+                                        setProductError("")
 
-                                    deleteProduct(deletingProduct.id)
+                                        await deleteProduct(deletingProduct.id)
 
-                                    setDeletingProduct(null)
+                                        setDeletingProduct(null)
+                                    } catch (error) {
+                                        setProductError(
+                                            error.response?.data?.message ||
+                                            error.message ||
+                                            "Failed to delete product"
+                                        )
+                                    } finally {
+                                        setSavingProduct(false)
+                                    }
                                 }}
                                 className="px-5 py-3 rounded-xl bg-red-600 text-white font-semibold hover:bg-red-700 transition"
                             >

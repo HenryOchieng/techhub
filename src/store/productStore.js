@@ -1,6 +1,7 @@
 import { create } from "zustand"
 import { persist } from "zustand/middleware"
 import productService from "../services/productService"
+import categoryService from "../services/categoryService"
 
 import eliteBook from "../assets/products/hp/elitebook.jpg"
 import eliteBookBack from "../assets/products/hp/elitebook-back.jpg"
@@ -78,6 +79,50 @@ const localProductImages = [
 ]
 
 const defaultLowStockLevel = 5
+
+const normalizeCategoryName = (name = "") => {
+    const aliases = {
+        "accessories": "accessories & peripherals",
+        "storage devices": "storage",
+        "networking equipment": "networking",
+        "printers & scanners": "printers"
+    }
+
+    const normalized = name.trim().toLowerCase()
+
+    return aliases[normalized] || normalized
+}
+
+const resolveCategoryId = async (categoryName) => {
+    const response = await categoryService.getCategories()
+    const categories = response.categories || []
+
+    const category = categories.find(
+        (item) =>
+            normalizeCategoryName(item.name) === 
+            normalizeCategoryName(categoryName)
+    )
+
+    if (!category) {
+        throw new Error(`Category "${categoryName}" was not found`)
+    }
+    
+    return category.id
+}
+
+const createProductSlug = (name) => {
+    const baseSlug = name
+        .trim()
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-|-$/g, "")
+
+    return `${baseSlug}-${Date.now()}`
+}
+
+const createProductSku = () => {
+    return `THK-${Date.now()}`
+}
 
 export const getInventoryStatus = (product) => {
     const stock = Number(product.stock)
@@ -487,35 +532,155 @@ const useProductStore = create(
                 return success
             },
 
-            addProduct: (product) =>
-                set((state) => ({
-                    products: [
-                        ...state.products,
-                        {
-                            ...product,
-                            id: product.id ?? Date.now(),
-                            rating: product.rating ?? 0,
-                            reviews: Array.isArray(product.reviews)
-                                ? product.reviews
-                                : [],
-                            image: product.image || product.images?.[0] || null,
-                            images: product.images?.length
-                                ? product.images
-                                : product.image
-                                    ? [product.image]
-                                    : [],
-                        }
-                    ]
-                })),
+            addProduct: async (product) => {
+                try {
+                    set({ isLoading: true, error: null })
 
-            updateProduct: (updatedProduct) =>
-                set((state) => ({
-                    products: state.products.map((product) =>
-                        product.id === updatedProduct.id
-                            ? { ...product, ...updatedProduct}
-                            : product
+                    const categoryId = await resolveCategoryId(product.category)
+
+                    const productData = {
+                        name: product.name.trim(),
+                        slug: createProductSlug(product.name),
+                        sku: product.sku || createProductSku(),
+                        description: product.description || "",
+                        brand: product.brand || null,
+                        price: Number(product.price),
+                        oldPrice: product.oldPrice ? Number(product.oldPrice) : null,
+                        stock: Number(product.stock ?? 0),
+                        lowStockLevel: Number(
+                            product.lowStockLevel ?? defaultLowStockLevel
+                        ),
+                        image: product.image || null,
+                        images: product.images || [],
+                        badge: product.badge || null,
+                        rating: Number(product.rating ?? 0),
+                        specifications: product.specifications || {},
+                        reviews: product.reviews || [],
+                        categoryId
+                    }
+
+                    const response = await productService.createProduct(productData)
+                    const createdProduct = response.product
+
+                    const newProduct = {
+                        ...createdProduct,
+                        price: Number(createdProduct.price),
+                        oldPrice: createdProduct.oldPrice
+                            ? Number(createdProduct.oldPrice)
+                            : null,
+                        category: createdProduct.category?.name ?? product.category,
+                        image: createdProduct.image || product.image || null,
+                        images: createdProduct.images?.length
+                            ? createdProduct.images
+                            : product.images || [],
+                        reviews: Array.isArray(createdProduct.reviews)
+                            ? createdProduct.reviews
+                            : [],
+                        specifications: createdProduct.specifications || {},
+                        lowStockLevel: createdProduct.lowStockLevel ?? defaultLowStockLevel
+                    }
+
+                    set((state) => ({
+                        product: [newProduct, ...state.products],
+                        isLoading: false,
+                        error: null
+                    }))
+
+                    return  newProduct
+                } catch (error) {
+                    console.error("Failed to create product:", error)
+
+                    set({
+                        isLoading: false,
+                        error: error.response?.data?.message || error.message 
+                    })
+
+                    throw error
+                }
+            },
+
+            updateProduct: async (updatedProduct) => {
+                try{
+                    set({ isLoading: true, error: null })
+
+                    const existingProduct = get().products.find(
+                        (product) => String(product.id) === String(updatedProduct.id)
                     )
-                })),
+
+                    if (!existingProduct) {
+                        throw new Error("Product not found")
+                    }
+
+                    let categoryId = existingProduct.categoryId || existingProduct.category?.id
+
+                    if (
+                        updatedProduct.category && updatedProduct.category !== existingProduct.category
+                    ) {
+                        categoryId = await resolveCategoryId(updatedProduct.category)
+                    }
+
+                    const productData = {
+                        name: updatedProduct.name,
+                        categoryId,
+                        slug: updatedProduct.slug || existingProduct.slug,
+                        sku: updatedProduct.sku || existingProduct.sku,
+                        description: updatedProduct.description ?? existingProduct.description ?? "",
+                        brand: updatedProduct.brand ?? existingProduct.brand ?? null,
+                        price: Number(updatedProduct.price),
+                        oldPrice: updatedProduct.oldPrice ?? existingProduct.oldPrice,
+                        stock: Number(updatedProduct.stock),
+                        lowStockLevel: Number(
+                            updatedProduct.lowStockLevel ??
+                            existingProduct.lowStockLevel ??
+                            defaultLowStockLevel
+                        ),
+                        image: updatedProduct.image ?? existingProduct.image,
+                        images: updatedProduct.images ?? existingProduct.images ?? [],
+                        badge: updatedProduct.badge ?? existingProduct.badge,
+                        rating: Number(updatedProduct.rating ?? existingProduct.rating ?? 0),
+                        specifications: updatedProduct.specifications ?? existingProduct.specifications ?? {},
+                        reviews: updatedProduct.reviews ?? existingProduct.reviews ?? [],
+                    }
+
+                    const response = await productService.updateProduct(
+                        updatedProduct.id,
+                        productData
+                    )
+
+                    const savedProduct = response.product
+
+                    const normalizedProduct = {
+                        ...savedProduct,
+                        price: Number(savedProduct.price),
+                        oldPrice: savedProduct.oldPrice ? Number(savedProduct.oldPrice) : null,
+                        category: savedProduct.category?.name ?? updatedProduct.category,
+                        image: savedProduct.image || existingProduct.image || null,
+                        images: savedProduct.images?.length ? savedProduct.images : existingProduct.images || [],
+                        reviews: Array.isArray(savedProduct.reviews) ? savedProduct.reviews : existingProduct.reviews || [],
+                        specifications: savedProduct.specifications || existingProduct.specifications || {},
+                        lowStockLevel: savedProduct.lowStockLevel ?? defaultLowStockLevel
+                    }
+
+                    set((state) => ({
+                        products: state.products.map((product) =>
+                            String(product.id) === String(updatedProduct.id) ? normalizedProduct : product
+                        ),
+                        isLoading: false,
+                        error: null
+                    }))
+
+                    return normalizedProduct
+                } catch (error) {
+                    console.error("Failed to update product:", error)
+
+                    set({
+                        isLoading: false,
+                        error: error.response?.data?.message || error.message
+                    })
+
+                    throw error
+                }
+            },
 
             decreaseStock: (items) => {
                 let success = false
@@ -651,12 +816,32 @@ const useProductStore = create(
                 )
             },
 
-            deleteProduct: (productId) =>
-                set((state) => ({
-                    products: state.products.filter(
-                        (product) => String(product.id) !== String(productId)
-                    )
-                }))
+            deleteProduct: async (productId) => {
+                try {
+                    set({ isLoading: true, error: null })
+
+                    await productService.deleteProduct(productId)
+
+                    set((state => ({
+                        products: state.products.filter(
+                            (product) => String(product.id) !== String(productId)
+                        ),
+                        isLoading: false,
+                        error: null
+                    })))
+
+                    return true
+                } catch (error) {
+                    console.error("Failed to delete product:", error)
+
+                    set({
+                        isLoading: false,
+                        error: error.response?.data?.message || error.message
+                    })
+
+                    throw error
+                }
+            }
         }),
         {
             name: "product-storage",

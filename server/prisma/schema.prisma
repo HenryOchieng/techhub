@@ -119,6 +119,8 @@ model Order {
 
   shippingAddress String?
   city            String?
+  county          String?
+  postalCode      String?
   notes           String?
 
   subtotal        Decimal     @db.Decimal(12, 2)
@@ -197,4 +199,5 @@ model InventoryMovement {
 
   @@index([productId])
   @@index([type])
+  @@index([createdAt])
 }
