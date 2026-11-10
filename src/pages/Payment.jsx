@@ -3,7 +3,6 @@ import { useNavigate } from "react-router-dom"
 import useOrderStore from "../store/orderStore"
 import useCheckoutStore from "../store/checkoutStore"
 import useCartStore from "../store/cartStore"
-//import useProductStore from "../store/productStore"
 import PaymentCard from "../components/checkout/PaymentCard"
 import {
     FiSmartphone,

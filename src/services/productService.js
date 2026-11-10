@@ -18,7 +18,7 @@ const productService = {
 
     updateProduct: async (id, productData) => {
         const response  = await api.put(`/products/${id}`, productData)
-        return response.dat
+        return response.data
     },
 
     deleteProduct: async (id) => {

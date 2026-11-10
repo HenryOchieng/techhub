@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react"
 import {
     FiDollarSign,
     FiShoppingBag,
@@ -8,7 +9,8 @@ import {
     FiClipboard,
 } from "react-icons/fi"
 import useOrderStore from "../../store/orderStore"
-import useProductStore from "../../store/productStore"
+import inventoryService from "../../services/inventoryService"
+import productService from "../../services/productService"
 
 function AdminDashboard() {
     const orders = useOrderStore((state) => state.orders)
@@ -37,21 +39,133 @@ function AdminDashboard() {
         (order) => order.status === "Delivered"
     ).length
 
-    const inventoryHistory = useProductStore(
-        (state) => state.inventoryHistory ?? []
-    )
+    const [inventoryHistory, setInventoryHistory] = useState([])
+    const [inventoryLoading, setInventoryLoading] = useState(true)
+    const [inventoryError, setInventoryError] = useState("")
 
-    const recentInventoryMovements = [...inventoryHistory]
-        .sort(
-            (a, b) =>
-                new Date(b.date).getTime() - new Date(a.date).getTime()
-        )
-        .slice(0, 5)
+    const [inventorySummary, setInventorySummary] = useState({
+        totalProducts: 0,
+        lowStock: 0,
+        outOfStock: 0,
+    })
+
+    const [summaryLoading, setSummaryLoading] = useState(true)
+    const [summaryError, setSummaryError] = useState("")
+
+    useEffect(() => {
+        const fetchInventoryHistory = async () => {
+            try {
+                setInventoryLoading(true)
+                setInventoryError("")
+
+                const response = await inventoryService.getInventoryHistory()
+
+                const records = Array.isArray(response)
+                    ? response
+                    : response.data ??
+                        response.movements ??
+                        response.inventoryHistory ??
+                        []
+
+                if (!Array.isArray(records)) {
+                    throw new Error("Invalid inventory history response")
+                }
+
+                const normalizedRecords = records.map((movement) => ({
+                    ...movement,
+                    type: String(movement.type ?? "").toUpperCase(),
+                    productName:
+                        movement.product?.name ??
+                        movement.productName ??
+                        "Unknown product",
+                    productId:
+                        movement.productId ??
+                        movement.product?.id,
+                    date: movement.createdAt ?? movement.date,
+                }))
+
+                setInventoryHistory(normalizedRecords)
+            } catch (error) {
+                console.error("Dashboard inventory error:", error)
+
+                setInventoryError(
+                    error.response?.data?.message ??
+                    error.message ??
+                    "Unable to load inventory activity"
+                )
+            } finally {
+                setInventoryLoading(false)
+            }
+        }
+
+        fetchInventoryHistory()
+    }, [])
+
+    useEffect(() => {
+        const fetchInventorySummary = async () => {
+            try {
+                setSummaryLoading(true)
+                setSummaryError("")
+
+                const [productsResponse, lowStockResponse, outOfStockResponse] =
+                    await Promise.all([
+                        productService.getProducts(),
+                        inventoryService.getLowStockProducts(),
+                        inventoryService.getOutOfStockProducts(),
+
+                    ])
+
+                const extractRecords = (response) => {
+                    const candidates = [
+                        response,
+                        response?.products,
+                        response?.data,
+                        response?.data?.products,
+                        response?.data?.data,
+                    ]
+
+                    const records = candidates.find(Array.isArray)
+
+                    if (!records) {
+                        throw new Error("Invalid inventory summary response")
+                    }
+
+                    return records
+                }
+
+                const products = extractRecords(productsResponse)
+                const lowStockProducts = extractRecords(lowStockResponse)
+                const outOfStockProducts = extractRecords(outOfStockResponse)
+
+                setInventorySummary({
+                    totalProducts: products.length,
+                    lowStock: lowStockProducts.length,
+                    outOfStock: outOfStockProducts.length,
+                })
+            } catch (error) {
+                console.error("Inventory summary error:", error)
+
+                setSummaryError(
+                    error.response?.data?.message ??
+                    error.message ??
+                    "Unable to load inventory summary"
+                )
+            } finally {
+                setSummaryLoading(false)
+            }
+        }
+
+        fetchInventorySummary()
+    }, [])
+
+    const recentInventoryMovements = [...inventoryHistory].sort(
+        (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+    ).slice(0, 5)
 
     const totalInventoryMovements = inventoryHistory.length
 
     const totalRestocks = inventoryHistory.filter(
-        (movement) => movement.type === "Restock"
+        (movement) => movement.type === "RESTOCK"
     ).length
 
     const totalRevenue = orders
@@ -153,7 +267,63 @@ function AdminDashboard() {
                         </div>
                     )
                 })}
+            </div>
 
+            <div className="mt-8">
+                <h2 className="text-lg font-bold text-slate-900 mb-4">
+                    Inventory Overview
+                </h2>
+                {summaryLoading ? (
+                    <p className="text-slate-500">Loading inventory summary...</p>
+                ) : summaryError ? (
+                    <p className="text-red-600">{summaryError}</p>
+                ) : (
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        <div className="bg-white border border-slate-200 rounded-2xl p-6">
+                            <div className="flex items-center justify-between">
+                                <p className="text-sm text-slate-500">
+                                    Total Products
+                                </p>
+                                <FiPackage className="text-xl text-blue-600" />
+                            </div>
+                            <p className="text-3xl font-bold text-slate-900 mt-3">
+                                {inventorySummary.totalProducts.toLocaleString()}
+                            </p>
+                            <p className="text-xs text-slate-500 mt-2">
+                                Active products in store
+                            </p>
+                        </div>
+                        <div className="bg-white border border-slate-200 rounded-2xl p-6">
+                            <div className="flex items-center justify-between">
+                                <p className="text-sm text-slate-500">
+                                    Low Stock
+                                </p>
+                                <FiArrowDown className="text-xl text-amber-600" />
+                            </div>
+                            <p className="text-3xl font-bold text-amber-600 mt-3">
+                                {inventorySummary.lowStock.toLocaleString()}
+                            </p>
+                            <p className="text-xs text-slate-500 mt-2">
+                                Products requiring restocking
+                            </p>
+                        </div>
+                        <div className="bg-white border border-slate-200 runded-2xl p-6">
+                            <div className="flex items-center justify-between">
+                                <p className="text-sm text-slate-500">
+                                    Out of Stock
+                                </p>
+                                <FiPackage className="text-xl text-red-600" />
+                            </div>
+                            <p className="text-3xl font-bold text-red-600 mt-3">
+                                {inventorySummary.outOfStock.toLocaleString()}
+                            </p>
+                            <p className="text-xs text-slate-500 mt-2">
+                                Products currently unavailable
+                            </p>
+                        </div>
+                    </div>
+                )
+            }
             </div>
 
             {/* Recent Orders */}
@@ -271,7 +441,7 @@ function AdminDashboard() {
                             </p>
                         </div>
                         <div className="rounded-xl bg-green-50 px-4 py-3">
-                            <p className="text-xs text-green=600">
+                            <p className="text-xs text-green-600">
                                 Restocks
                             </p>
                             <p className="text-xl font-bold text-green-700">
@@ -280,14 +450,19 @@ function AdminDashboard() {
                         </div>
                     </div>
                 </div>
-                {recentInventoryMovements.length === 0 ? (
+                {inventoryLoading ? (
+                    <div className="px-6 py-12 text-center">
+                        Loading inventory activity...
+                    </div>
+                ) : inventoryError ? (
+                    <div className="px-6 py-12 text-center text-red-600">
+                        {inventoryError}
+                    </div>
+                ) : recentInventoryMovements.length === 0 ? (
                     <div className="px-6 py-12 text-center">
                         <FiClipboard className="mx-auto text-3xl text-slate-300" />
                         <p className="mt-3 font-semibold text-slate-700">
                             No inventory activity yet
-                        </p>
-                        <p className="mt-1 text-sm text-slate-500">
-                            Restock a product to see its activity recorded here.
                         </p>
                     </div>
                 ) : (
@@ -298,7 +473,7 @@ function AdminDashboard() {
                                     <th className="px-6 py-4 text-sm font-semibold text-slate-600">
                                         Product
                                     </th>
-                                    <th className="px-6 py-4 text-sm font-semibold text-sate-600">
+                                    <th className="px-6 py-4 text-sm font-semibold text-slate-600">
                                         Activity
                                     </th>
                                     <th className="px-6 py-4 text-sm font-semibold text-slate-600">
@@ -328,24 +503,34 @@ function AdminDashboard() {
                                         </td>
                                         <td className="px-6 py-4">
                                             <span className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${
-                                                movement.type === "Restock"
+                                                movement.type === "RESTOCK"
                                                     ? "bg-green-100 text-green-700"
-                                                    : movement.type === "Slate"
+                                                    : movement.type === "SALE"
                                                     ? "bg-blue-100 text-blue-700"
+                                                    : movement.type === "RETURN"
+                                                    ? "bg-purple-100 text-purple-700"
+                                                    : movement.type === "ADJUSTMENT"
+                                                    ? "bg-amber-100 text-amber-700"
                                                     : "bg-slate-100 text-slate-700"
-                                            }`}>
-                                                {movement.type}
+                                            }`}
+                                            >
+                                                {{
+                                                    RESTOCK: "Restock",
+                                                    SALE: "Sale",
+                                                    RETURN: "Order Cancellation",
+                                                    ADJUSTMENT: "Adjustment"
+                                                }[movement.type] ?? movement.type}
                                             </span>
                                         </td>
                                         <td className={`px-6 py-4 font-semibold ${
-                                            movement.type === "Sale" || (movement.type === "Adjustment" && movement.adjustmentType === "decrease")
+                                            movement.type === "SALE" || (movement.type === "ADJUSTMENT" && Number(movement.stockAfter) < Number(movement.stockBefore))
                                                 ? "text-red-700"
                                                 : "text-green-700"
                                         }`}>
-                                            {movement.type === "Sale" || (movement.type === "Adjustment" && movement.adjustmentType === "decrease") ? "-" : "+"}
-                                            {movement.quantity}
+                                            {movement.type === "SALE" || (movement.type === "ADJUSTMENT" && Number(movement.stockAfter) < Number(movement.stockBefore)) ? "-" : "+"}
+                                            {Math.abs(movement.quantity)}
                                         </td>
-                                        <td className="px-6 py-4 text-sm tex-slate-600">
+                                        <td className="px-6 py-4 text-sm text-slate-600">
                                             {movement.stockBefore} -{">"} {movement.stockAfter}
                                         </td>
                                         <td className="px-6 py-4 text-sm text-slate-500 whitespace-nowrap">

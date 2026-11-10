@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import {
     FiSearch,
     FiEye,
@@ -35,6 +35,14 @@ function AdminOrders() {
     const updatePaymentStatus = useOrderStore(
         (state) => state.updatePaymentStatus
     )
+
+    const fetchOrders = useOrderStore((state) => state.fetchOrders)
+    const isLoading = useOrderStore((state) => state.isLoading)
+    const error = useOrderStore((state) => state.error)
+
+    useEffect(() => {
+        fetchOrders()
+    }, [fetchOrders])
 
     const filteredOrders = orders.filter((order) => {
         const orderId = String(order.id ?? order.orderNumber ?? "")
@@ -84,61 +92,60 @@ function AdminOrders() {
             : "bg-yellow-100 text-yellow-700"
     }
 
-    const handleOrderStatusChange = (status) => {
-        const orderNumber = selectedOrder.orderNumber ?? selectedOrder.id
+    const handleOrderStatusChange = async (status) => {
+        const orderId = selectedOrder.id
 
         if (status === "Cancelled") {
             const confirmed = window.confirm("Are you sure you want to cancel this order?")
 
-            if (!confirmed) return 
-
-            const success = cancelOrder(orderNumber)
-
-            if (!success) {
-                toast.error("Unable to cancel this order. Check its status and stock.")
-
-                return
-            }
-
-            setSelectedOrder((previous) => ({
-                ...previous,
-                status: "Cancelled",
-            }))
-
-            toast.success("Order cancelled successfully.")
-            return
+            if (!confirmed) return
         }
 
-        const success = updateOrderStatus(orderNumber, status)
+        const success = status === "Cancelled"
+            ? await cancelOrder(orderId)
+            : await updateOrderStatus(orderId, status)
 
         if (!success) {
-            toast.error(`Cannot change order from ${selectedOrder.status} to ${status}.`)
+            toast.error(
+                status === "Cancelled"
+                    ? "Unable to cancel this order."
+                    : `Cannot change order from ${selectedOrder.status} to ${status}.`
+            )
             return
         }
 
-        setSelectedOrder((previous) => ({
-            ...previous,
-            status,
-        }))
+        const updatedOrder = useOrderStore.getState().orders.find(
+            (order) => String(order.id) === String(orderId)
+        )
 
-        toast.success(`Order status updated to ${status}`)
+        if (updatedOrder) {
+            setSelectedOrder(updatedOrder)
+        }
+
+        toast.success(
+            status === "Cancelled"
+                ? "Order cancelled successfully."
+                : `Order status updated to ${status}.`
+        )
     }
 
-    const handlePaymentStatusChange = (paymentStatus) => {
-        const orderNumber =
-            selectedOrder.orderNumber ?? selectedOrder.id
+    const handlePaymentStatusChange = async (paymentStatus) => {
+        const orderId = selectedOrder.id
 
-        const success = updatePaymentStatus(orderNumber, paymentStatus)
+        const success = await updatePaymentStatus(orderId, paymentStatus)
 
         if (!success) {
-            toast.error(`Cannot change payment status from ${selectedOrder.paymentStatus ?? "Pending"} to ${paymentStatus}`)
+            toast.error(`Cannot change payment status to ${paymentStatus}.`)
             return
         }
 
-        setSelectedOrder((previous) => ({
-            ...previous,
-            paymentStatus,
-        }))
+        const updatedOrder = useOrderStore.getState().orders.find(
+            (order) =>String(order.id) === String(orderId)
+        )
+
+        if (updatedOrder) {
+            setSelectedOrder(updatedOrder)
+        }
 
         toast.success(`Payment status updated to ${paymentStatus}.`)
     }
@@ -202,8 +209,19 @@ function AdminOrders() {
                         All Orders
                     </h2>
                     <p className="text-sm text-slate-500 mt-1">
-                        {filteredOrders.length} orders found
+                        {isLoading ? "Loading orders..." : `${filteredOrders.length} orders found`}
                     </p>
+                    {error && (
+                        <div className="mt-3 text-sm text-red-600">
+                            {error}
+                            <button
+                                onClick={() => fetchOrders()}
+                                className="ml-2 underline font-semibold"
+                            >
+                                Retry
+                            </button>
+                        </div>
+                    )}
                 </div>
                 <div className="overflow-x-auto">
                     <table className="w-full text-left">
@@ -236,6 +254,16 @@ function AdminOrders() {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100">
+                            {isLoading && orders.length === 0 && (
+                                <tr>
+                                    <td
+                                        colSpan="8"
+                                        className="px-6 py-8 text-center text-slate-500"
+                                    >
+                                        Loading orders from the server...
+                                    </td>
+                                </tr>
+                            )}
                             {filteredOrders.map((order, index) => {
                                 const customerName =
                                     (
@@ -389,7 +417,7 @@ function AdminOrders() {
                                 <h3 className="text-lg font-bold text-slate-900 mb-4">
                                     Manage Order
                                 </h3>
-                                <div className="grid sm:grid=cols-2 gap-5">
+                                <div className="grid sm:grid-cols-2 gap-5">
                                     <div className="bg-slate-50 rounded-xl p-5">
                                         <label
                                             htmlFor="orderStatus"
@@ -458,12 +486,25 @@ function AdminOrders() {
                                 </h3>
                                 <div className="bg-slate-50 rounded-xl p-5">
                                     <p className="font-semibold text-slate-900">
-                                        {selectedOrder.customer}
+                                        {selectedOrder.customerName ?? selectedOrder.customer}
                                     </p>
-                                    <p className="text-sm text-slate-500 mt-1">
-                                        Customer information will be connected to the
-                                        user account when the backend is implemented.
+                                    <p className="text-sm text-slate-600">
+                                        {selectedOrder.email ?? "No email provided"}
                                     </p>
+                                    <p className="text-sm text-slate-600">
+                                        {selectedOrder.phone ?? "No phone provided"}
+                                    </p>
+                                    <p className="text-sm text-slate-600">
+                                        {selectedOrder.shippingAddress ?? "No address provided"}
+                                    </p>
+                                    <p className="text-sm text-slet-600">
+                                        {[selectedOrder.city, selectedOrder.county].filter(Boolean).join(", ")}
+                                    </p>
+                                    {selectedOrder.postalCode && (
+                                        <p className="text-sm text-slate-600">
+                                            Postal code: {selectedOrder.postalCode}
+                                        </p>
+                                    )}
                                 </div>
                             </div>
 

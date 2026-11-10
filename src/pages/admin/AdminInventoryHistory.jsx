@@ -1,35 +1,95 @@
 
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import {
     FiSearch,
     FiPackage,
     FiRefreshCw,
     FiClipboard,
 } from "react-icons/fi"
-import useProductStore from "../../store/productStore"
+import inventoryService from "../../services/inventoryService"
+
+const movementLabels = {
+    RESTOCK: "Restock",
+    SALE: "Sale",
+    RETURN: "Order Cancellation",
+    ADJUSTMENT: "Adjustment",
+}
+
+const normalizeMovement = (movement) => {
+    const type = String(movement.type ?? "").toUpperCase()
+
+    return {
+        ...movement,
+        type,
+        productName:
+            movement.product?.name ??
+            movement.productName ??
+            "Unknown product",
+        date: movement.createdAt ?? movement.date,
+        productId: movement.productId ?? movement.product?.id,
+    }
+}
 
 function AdminInventoryHistory() {
     const [search, setSearch] = useState("")
     const [typeFilter, setTypeFilter] = useState("All")
+    const [inventoryHistory, setInventoryHistory] = useState([])
+    const [isLoading, setIsLoading] = useState(true)
+    const [error, setError] = useState("")
 
-    const inventoryHistory = useProductStore(
-        (state) => state.inventoryHistory ?? []
-    )
+    useEffect(() => {
+        const fetchHistory = async () => {
+            try {
+                setIsLoading(true)
+                setError("")
+
+                const response =
+                    await inventoryService.getInventoryHistory()
+
+                const records = Array.isArray(response)
+                    ? response
+                    : response.data ??
+                      response.movements ??
+                      response.inventoryHistory ??
+                      []
+
+                if (!Array.isArray(records)) {
+                    throw new Error(
+                        "Unexpected inventory history response format"
+                    )
+                }
+
+                setInventoryHistory(records.map(normalizeMovement))
+            } catch (err) {
+                console.error("Failed to fetch inventory history:", err)
+
+                setError(
+                    err.response?.data?.message ||
+                    err.message ||
+                    "Failed to load inventory history"
+                )
+            } finally {
+                setIsLoading(false)
+            }
+        }
+
+        fetchHistory()
+    }, [])
 
     const filteredHistory = useMemo(() => {
         const searchTerm = search.toLowerCase().trim()
 
         return inventoryHistory.filter((movement) => {
-            const matchesSearch =
-                (movement.productName ?? "")
-                    .toLowerCase()
-                    .includes(searchTerm) ||
-                (movement.supplier ?? "")
-                    .toLowerCase()
-                    .includes(searchTerm) ||
-                (movement.reference ?? "")
+            const matchesSearch = [
+                movement.productName,
+                movement.supplier,
+                movement.reference,
+                movement.notes,
+            ].some((value) =>
+                String(value ?? "")
                     .toLowerCase()
                     .includes(searchTerm)
+            )
 
             const matchesType =
                 typeFilter === "All" ||
@@ -42,32 +102,46 @@ function AdminInventoryHistory() {
     const totalMovements = inventoryHistory.length
 
     const restockMovements = inventoryHistory.filter(
-        (movement) => movement.type === "Restock"
+        (movement) => movement.type === "RESTOCK"
     ).length
-
-    const formatDate = (date) => {
-        if (!date) return "—"
-
-        const parsedDate = new Date(date)
-
-        if (Number.isNaN(parsedDate.getTime())) return "—"
-
-        return parsedDate.toLocaleString()
-    }
 
     const getMovementStyle = (type) => {
         switch (type) {
-            case "Restock":
+            case "RESTOCK":
                 return "bg-green-100 text-green-700"
-            case "Sale":
+            case "SALE":
                 return "bg-blue-100 text-blue-700"
-            case "Order Cancellation":
+            case "RETURN":
                 return "bg-purple-100 text-purple-700"
-            case "Adjustment":
+            case "ADJUSTMENT":
                 return "bg-amber-100 text-amber-700"
             default:
                 return "bg-slate-100 text-slate-700"
         }
+    }
+
+    const getMovementLabel = (type) =>
+        movementLabels[type] ?? type
+
+    const isStockDecrease = (movement) => {
+        if (movement.type === "SALE") return true
+
+        if (movement.type === "ADJUSTMENT") {
+            return Number(movement.stockAfter) <
+                Number(movement.stockBefore)
+        }
+
+        return false
+    }
+
+    const formatDate = (date) => {
+        if (!date) return "-"
+
+        const parsedDate = new Date(date)
+
+        if (Number.isNaN(parsedDate.getTime())) return "-"
+
+        return parsedDate.toLocaleString()
     }
 
     return (
@@ -137,12 +211,10 @@ function AdminInventoryHistory() {
                         className="rounded-xl border border-slate-200 px-4 py-3 outline-none focus:border-blue-500"
                     >
                         <option value="All">All movements</option>
-                        <option value="Restock">Restocks</option>
-                        <option value="Sale">Sales</option>
-                        <option value="Order Cancellation">
-                            Order cancellations
-                        </option>
-                        <option value="Adjustment">Adjustments</option>
+                        <option value="RESTOCK">Restocks</option>
+                        <option value="SALE">Sales</option>
+                        <option value="RETURN">Order cancellations</option>
+                        <option value="ADJUSTMENT">Adjustments</option>
                     </select>
                 </div>
             </div>
@@ -157,7 +229,20 @@ function AdminInventoryHistory() {
                     </span>
                 </div>
 
-                {filteredHistory.length === 0 ? (
+                {isLoading ? (
+                    <div className="py-16 text-center text-slate-500">
+                        Loading inventory movements...
+                    </div>
+                ) : error ? (
+                    <div className="px-6 py-16 text-center">
+                        <p className="font-semibold text-red-600">
+                            Unable to load inventory history
+                        </p>
+                        <p className="mt-2 text-sm text-slate-500">
+                            {error}
+                        </p>
+                    </div>
+                ) : filteredHistory.length === 0 ? (
                     <div className="flex flex-col items-center px-6 py-16 text-center">
                         <div className="rounded-full bg-slate-100 p-4 text-slate-400">
                             <FiRefreshCw size={28} />
@@ -166,8 +251,8 @@ function AdminInventoryHistory() {
                             No inventory movements found
                         </h3>
                         <p className="mt-1 max-w-md text-sm text-slate-500">
-                            Restock a product to create your first inventory
-                            history record, or change your search filters.
+                            No matching movements were found. Try changing
+                            your search or movement filters.
                         </p>
                     </div>
                 ) : (
@@ -208,30 +293,32 @@ function AdminInventoryHistory() {
                                             <span
                                                 className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${getMovementStyle(movement.type)}`}
                                             >
-                                                {movement.type}
+                                                {getMovementLabel(movement.type)}
                                             </span>
                                         </td>
 
-                                        <td className={`px-5 py-4 font-semibold ${
-                                            movement.type === "Sale" ||(movement.type === "Adjustment" && movement.adjustmentType === "decrease")
-                                                ? "text-red-700"
-                                                : "text-green-700"
-                                        }`}>
-                                            {movement.type === "Sale" || (movement.type === "Adjustment" && movement.adjustmentType === "decrease") ? "-" : "+"}
-                                            {movement.quantity}
+                                        <td
+                                            className={`px-5 py-4 font-semibold ${
+                                                isStockDecrease(movement)
+                                                    ? "text-red-700"
+                                                    : "text-green-700"
+                                            }`}
+                                        >
+                                            {isStockDecrease(movement) ? "-" : "+"}
+                                            {Math.abs(movement.quantity)}
                                         </td>
 
                                         <td className="px-5 py-4 text-slate-600">
-                                            {movement.stockBefore}
+                                            {movement.stockBefore ?? "-"}
                                         </td>
 
                                         <td className="px-5 py-4 font-semibold text-slate-900">
-                                            {movement.stockAfter}
+                                            {movement.stockAfter ?? "-"}
                                         </td>
 
                                         <td className="px-5 py-4">
                                             <p className="text-slate-700">
-                                                {movement.supplier || "—"}
+                                                {movement.supplier || "-"}
                                             </p>
                                             <p className="mt-1 text-xs text-slate-400">
                                                 {movement.reference || "No reference"}

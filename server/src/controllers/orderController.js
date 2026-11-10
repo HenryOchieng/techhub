@@ -315,3 +315,339 @@ export const createOrder = async (req, res) => {
         }
     }
 }
+
+export const getOrders = async (req, res) => {
+    try {
+        const page = Math.max(1, Number.parseInt(req.query.page, 10) || 1)
+        const limit = Math.min(
+            100, Math.max(1, Number.parseInt(req.query.limit, 10) || 10)
+        )
+
+        const { status } = req.query
+
+        const validStatutes = [
+            "PENDING",
+            "CONFIRMED",
+            "PROCESSING",
+            "SHIPPED",
+            "DELIVERED",
+            "CANCELLED"
+        ]
+
+        if (status && !validStatutes.includes(status)) {
+            return res.status(400).json({
+                success: false,
+                message: "Invalid order status"
+            })
+        }
+
+        const where = status ? { status } : {}
+
+        const [orders, totalOrders] = await prisma.$transaction([
+            prisma.order.findMany({
+                where,
+                skip: (page - 1) * limit,
+                take: limit,
+                orderBy: {
+                    createdAt: "desc"
+                },
+                include: {
+                    items: {
+                        include: {
+                            product: {
+                                select: {
+                                    id: true,
+                                    name: true,
+                                    sku: true,
+                                    image: true
+                                }
+                            }
+                        }
+                    },
+                    payment: true
+                }
+            }),
+            prisma.order.count({ where })
+        ])
+
+        return res.status(200).json({
+            success: true,
+            data: orders,
+            pagination: {
+                totalOrders,
+                currentPage: page,
+                totalPages: Math.ceil(totalOrders / limit),
+                pageSize: limit
+            }
+        })
+    } catch (error) {
+        console.error("Get orders error:", error)
+
+        return res.status(500).json({
+            success: false,
+            message: "Unable to retrieve orders"
+        })
+    }
+}
+
+export const getOrderById = async (req, res) => {
+    try {
+        const { id } = req.params
+
+        const order = await prisma.order.findUnique({
+            where: { id },
+            include: {
+                items: {
+                    include: {
+                        product: {
+                            select: {
+                                id: true,
+                                name: true,
+                                sku: true,
+                                image: true
+                            }
+                        }
+                    }
+                },
+                payment: true
+            }
+        })
+
+        if (!order) {
+            return res.status(404).json({
+                success: false,
+                message: "Order not found"
+            })
+        }
+
+        return res.status(200).json({
+            success: true,
+            data: order
+        })
+    } catch (error) {
+        console.error("Get order error:", error)
+
+        return res.status(500).json({
+            success: false,
+            message: "Unable to retrieve order"
+        })
+    }
+}
+
+const allowedOrderTranisiions = {
+    PENDING: ["CONFIRMED"],
+    CONFIRMED: ["PROCESSING"],
+    PROCESSING: ["SHIPPED"],
+    SHIPPED: ["DELIVERED"],
+    DELIVERED: [],
+    CANCELLED: []
+}
+
+const runSerializableTransaction = async (callback) => {
+    for (let attempt = 1; attempt <= 3; attempt ++) {
+        try {
+            return await prisma.$transaction(callback, {
+                isolationLevel: "Serializable"
+            })
+        } catch (error) {
+            if (error.code === "P2034" && attempt < 3) {
+                continue
+            }
+
+            throw error
+        }
+    }
+}
+
+export const updateOrderStatus = async (req, res) => {
+    try {
+        const { id } = req.params
+        const { status } = req.body
+
+        if (!Object.prototype.hasOwnProperty.call(
+            allowedOrderTranisiions,
+            status
+        )) {
+            return res.status(400).json({
+                success: false,
+                message: "Invaid order status"
+            })
+        }
+
+        if (status === "CANCELLED") {
+            return res.status(400).json({
+                success: false,
+                message: "Use the cancellation endpoint to cancel an order"
+            })
+        }
+
+        const updatedOrder = await runSerializableTransaction(
+            async (tx) => {
+                const order = await tx.order.findUnique({
+                    where: { id }
+                })
+
+                if (!order) {
+                    const error = new Error("Order not found")
+                    error.statusCode = 404
+                    throw error
+                }
+
+                if (order.status === status) {
+                    return order
+                }
+
+                const allowed = allowedOrderTranisiions[order.status]
+
+                if (!allowed.includes(status)) {
+                    const error = new Error(`Cannot change order status from ${order.status} to ${status}`)
+                    error.statusCode = 409
+                    throw error
+                }
+
+                return tx.order.update({
+                    where: { id },
+                    data: { status }
+                })
+            }
+        )
+
+        return res.status(200).json({
+            success: true,
+            message: "Order status update successfully",
+            data: updatedOrder
+        })
+    } catch (error) {
+        console.error("Update order status error:", error)
+
+        return res.status(error.statusCode || 500).json({
+            success: false,
+            message: error.statusCode ? error.message : "Unable to update order status"
+        })
+    }
+}
+
+export const cancelOrder = async (req, res) => {
+    try {
+        const { id } = req.params
+
+        const result = await runSerializableTransaction(
+            async (tx) => {
+                const order = await tx.order.findUnique({
+                    where: { id },
+                    include: {
+                        items: true
+                    }
+                })
+
+                if (!order) {
+                    const error = new Error("Order not found")
+                    error.statusCode = 404
+                    throw error
+                }
+
+                if (order.status === "CANCELLED") {
+                    return {
+                        order,
+                        alreadyCancelled: true,
+                        stockRestored: order.stockRestored
+                    }
+                }
+
+                if (["SHIPPED", "DELIVERED"].includes(order.status)) {
+                    const error = new Error(
+                        "Shipped or delivered orders cannot be cancelled"
+                    )
+                    error.statusCode = 409
+                    throw error
+                }
+
+                if (
+                    order.stockDeducted &&
+                    !order.stockRestored
+                ) {
+                    for (const item of order.items) {
+                        const product = await tx.product.findUnique({
+                            where: {
+                                id: item.productId
+                            }
+                        })
+
+                        if (!product) {
+                            throw new Error(
+                                `Product not found: ${item.productName}`
+                            )
+                        }
+
+                        const stockBefore = product.stock
+                        const stockAfter = stockBefore + item.quantity
+
+                        await tx.product.update({
+                            where: {
+                                id: item.productId
+                            },
+                            data: {
+                                stock: {
+                                    increment: item.quantity
+                                }
+                            }
+                        })
+
+                        await tx.inventoryMovement.create({
+                            data: {
+                                product: {
+                                    connect: {
+                                        id: item.productId
+                                    }
+                                },
+                                type: "RETURN",
+                                quantity: item.quantity,
+                                stockBefore,
+                                stockAfter,
+                                reference: order.orderNumber,
+                                notes: `Stock restored after cancellation of order ${order.orderNumber}`
+                            }
+                        })
+                    }
+                }
+
+                const cancelledOrder = await tx.order.update({
+                    where: { id },
+                    data: {
+                        status: "CANCELLED",
+                        ...(order.stockDeducted && !order.stockRestored
+                            ? { stockRestored: true }
+                            : {})
+                    },
+                    include: {
+                        items: true,
+                        payment: true
+                    }
+                })
+
+                return {
+                    order: cancelledOrder,
+                    alreadyCancelled: false,
+                    stockRestored: cancelledOrder.stockRestored
+                }
+            }
+        )
+
+        return res.status(200).json({
+            success: true,
+            message: result.alreadyCancelled
+                ? "Order was already cancelled"
+                : "Order cancelled successfully",
+            data: result
+        })
+    } catch (error) {
+        console.error("Cancel order error:", error)
+
+        return res.status(error.statusCode || 500).json({
+            success: false,
+            message: error.statusCode
+                ? error.message
+                : "Unable to cancel order"
+        })
+    }
+}
