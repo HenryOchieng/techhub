@@ -233,6 +233,7 @@ export const createOrder = async (req, res) => {
                     return await tx.order.create({
                         data: {
                             orderNumber,
+                            userId: req.user.id,
                             customerName: customerName.trim(),
                             customerEmail: customerEmail.trim(),
                             customerPhone: customerPhone.trim(),
@@ -341,7 +342,13 @@ export const getOrders = async (req, res) => {
             })
         }
 
-        const where = status ? { status } : {}
+        const where = {
+            ...(status ? { status } : {}),
+            ...(req.user.role !== "ADMIN"
+                ? { userId: req.user.id }
+                : {}
+            )
+        }
 
         const [orders, totalOrders] = await prisma.$transaction([
             prisma.order.findMany({
@@ -395,7 +402,13 @@ export const getOrderById = async (req, res) => {
         const { id } = req.params
 
         const order = await prisma.order.findUnique({
-            where: { id },
+            where: {
+                id,
+                ...(req.user.role !== "ADMIN"
+                    ? { userId: req.user.id }
+                    : {}
+                )
+            },
             include: {
                 items: {
                     include: {
@@ -533,8 +546,14 @@ export const cancelOrder = async (req, res) => {
 
         const result = await runSerializableTransaction(
             async (tx) => {
-                const order = await tx.order.findUnique({
-                    where: { id },
+                const order = await tx.order.findFirst({
+                    where: {
+                        id,
+                        ...(req.user.role !== "ADMIN"
+                            ? { userId: req.user.id }
+                            : {}
+                        )
+                    },
                     include: {
                         items: true
                     }

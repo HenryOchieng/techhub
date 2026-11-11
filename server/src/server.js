@@ -8,6 +8,7 @@ import categoryRoutes from "./routes/categoryRoutes.js"
 import inventoryRoutes from "./routes/inventoryRoutes.js"
 import orderRoutes from "./routes/orderRoutes.js"
 import paymentRoutes from "./routes/paymentRoutes.js"
+import authRoutes from "./routes/authRoutes.js"
 
 const app = express()
 
@@ -47,6 +48,7 @@ app.use("/api/categories", categoryRoutes)
 app.use("/api/inventory", inventoryRoutes)
 app.use("/api/orders", orderRoutes)
 app.use("/api/payments", paymentRoutes)
+app.use("/api/auth", authRoutes)
 
 const PORT = process.env.PORT || 5000
 

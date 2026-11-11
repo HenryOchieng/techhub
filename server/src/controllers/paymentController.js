@@ -18,8 +18,20 @@ export const getPayment = async (req, res) => {
     try {
         const { orderId } = req.params
 
-        const payment = await prisma.payment.findUnique({
-            where: { orderId },
+        const payment = await prisma.payment.findFirst({
+            where: {
+                orderId,
+                ...(req.user.role !== "ADMIN"
+                    ? {
+                        order: {
+                            is: {
+                                userId: req.user.id
+                            }
+                        }
+                    }
+                    : {}
+                )
+            },
             include: {
                 order: {
                     select: {
