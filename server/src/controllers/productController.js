@@ -1,5 +1,25 @@
 import prisma from "../config/db.js"
 
+const isValidNonNegativeNumber = (value) => {
+    return (
+        value !== "" &&
+        value !== null &&
+        value !== undefined &&
+        Number.isFinite(Number(value)) &&
+        Number(value) >= 0
+    )
+}
+
+const isValidNonNegativeInteger = (value) => {
+    return (
+        value !== "" &&
+        value !== null &&
+        value !== undefined &&
+        Number.isInteger(Number(value)) &&
+        Number(value) >= 0
+    )
+}
+
 export const getProducts = async (req, res) => {
     try {
         const products = await prisma.product.findMany({
@@ -39,7 +59,6 @@ export const createProduct = async (req, res) => {
             brand,
             price,
             oldPrice,
-            stock,
             lowStockLevel,
             image,
             images,
@@ -50,50 +69,82 @@ export const createProduct = async (req, res) => {
             categoryId
         } = req.body
 
+
         if (
-            !name ||
-            !slug ||
-            !sku ||
-            price === undefined ||
-            !categoryId
+            typeof name !== "string" || !name.trim() ||
+            typeof slug !== "string" || !slug.trim() ||
+            typeof sku !== "string" || !sku.trim() ||
+            typeof categoryId !== "string" || !categoryId.trim() ||
+            price === undefined
         ) {
             return res.status(400).json({
                 success: false,
-                message: "Missing required fields"
+                message: "Name, slug, SKU, price and category are required"
             })
         }
 
-        if (!Number.isFinite(Number(price)) || Number(price) < 0) {
+        if (!isValidNonNegativeNumber(price)) {
             return res.status(400).json({
                 success: false,
                 message: "Price must be a valid non-negative number"
             })
         }
 
-        const productStock = Number(stock ?? 0)
-
-        if (!Number.isInteger(productStock) || productStock < 0) {
+        if (
+            oldPrice !== undefined &&
+            oldPrice !== null &&
+            oldPrice !== "" &&
+            !isValidNonNegativeNumber(oldPrice)
+        ) {
             return res.status(400).json({
                 success: false,
-                message: "Stock must be a non-negative integer"
+                message: "Old price must be a valid non-negative number"
             })
         }
 
+        const productStock = 0
+
+        const productLowStockLevel = lowStockLevel ?? 5
+
+        if (!isValidNonNegativeInteger(productLowStockLevel)) {
+            return res.status(400).json({
+                success: false,
+                message: "Low stock level must be a non-negative integer"
+            })
+        }
+
+        const productRating = rating ?? 0
+
+        if (
+            !isValidNonNegativeNumber(productRating) ||
+            Number(productRating) > 5
+        ) {
+            return res.status(400).json({
+                success: false,
+                message: "Rating must be between 0 and 5"
+            })
+        }
+
+
         const newProduct = await prisma.product.create({
             data: {
-                name,
-                slug,
+                name: name.trim(),
+                slug: slug.trim(),
                 description,
                 sku,
                 brand,
                 price: Number(price),
-                oldPrice: oldPrice ? Number(oldPrice) : null,
-                stock: productStock,
-                lowStockLevel: Number(lowStockLevel ?? 5),
+                oldPrice: oldPrice === "" || oldPrice === undefined
+                    ? null
+                    : oldPrice === null
+                        ? null
+                        : Number(oldPrice),
+                stock: Number(productStock),
+                lowStockLevel: Number(productLowStockLevel),
                 image,
                 images,
                 badge,
-                rating: Number(rating ?? 0),
+                rating: Number(productRating),
                 specifications: specifications ?? {},
                 reviews: reviews ?? [],
                 categoryId
@@ -155,31 +206,114 @@ export const updateProduct = async (req, res) => {
             categoryId
         } = req.body
 
-        if (price !== undefined && (
-            !Number.isFinite(Number(price)) || Number(price) < 0
-        )) {
+
+        if (
+            name !== undefined &&
+            (typeof name !== "string" || !name.trim())
+        ) {
             return res.status(400).json({
                 success: false,
-                message: "Price must a valid non-negative number"
+                message: "Product name cannot be empty"
             })
         }
 
-        if (stock !== undefined && (
-            !Number.isInteger(Number(stock)) || Number(stock) < 0
-        )) {
+        if (
+            slug !== undefined &&
+            (typeof slug !== "string" || !slug.trim())
+        ) {
             return res.status(400).json({
                 success: false,
-                message: "Stock must be a non-negative integer"
+                message: "Product slug cannot be empty"
             })
         }
+
+        if (
+            sku !== undefined &&
+            (typeof sku !== "string" || !sku.trim())
+        ) {
+            return res.status(400).json({
+                success: false,
+                message: "Product SKU cannot be empty"
+            })
+        }
+
+        if (
+            price !== undefined &&
+            !isValidNonNegativeNumber(price)
+        ) {
+            return res.status(400).json({
+                success: false,
+                message: "Price must be a valid non-negative number"
+            })
+        }
+
+        if (
+            oldPrice !== undefined &&
+            oldPrice !== null &&
+            oldPrice !== "" &&
+            !isValidNonNegativeNumber(oldPrice)
+        ) {
+            return res.status(400).json({
+                success: false,
+                message: "Old price must be a valid non-negative number"
+            })
+        }
+
+        if (
+            lowStockLevel !== undefined &&
+            !isValidNonNegativeInteger(lowStockLevel)
+        ) {
+            return res.status(400).json({
+                success: false,
+                message: "Low stock level must be a non-negative integer"
+            })
+        }
+
+        if (
+            rating !== undefined &&
+            (
+                !isValidNonNegativeNumber(rating) ||
+                Number(rating) > 5
+            )
+        ) {
+            return res.status(400).json({
+                success: false,
+                message: "Rating must be between 0 and 5"
+            })
+        }
+
+        if (stock !== undefined) {
+            return res.status(400).json({
+                success: false,
+                message: "Use the inventory endpoints to update product stock"
+            })
+        }
+
+        if (
+            categoryId !== undefined &&
+            (typeof categoryId !== "string" || !categoryId.trim())
+        ) {
+            return res.status(400).json({
+                success: false,
+                message: "Invalid category ID"
+            })
+        }
+
+        if (Object.keys(req.body).length === 0) {
+            return res.status(400).json({
+                success: false,
+                message: "No update fields provided"
+            })
+        }
+
 
         const updatedProduct = await prisma.product.update({
             where: { id },
             data: {
-                ...(name !== undefined && { name }),
-                ...(slug != undefined && { slug }),
+                ...(name !== undefined && { name: name.trim() }),
+                ...(slug != undefined && { slug: slug.trim() }),
                 ...(description !== undefined && { description }),
-                ...(sku !== undefined && { sku }),
+                ...(sku !== undefined && { sku: sku.trim() }),
                 ...(brand !== undefined && { brand }),
                 ...(price !== undefined && { price: Number(price) }),
                 ...(oldPrice !== undefined && {
@@ -187,7 +321,6 @@ export const updateProduct = async (req, res) => {
                         ? null
                         : Number(oldPrice)
                 }),
-                ...(stock !== undefined && {stock: Number(stock) }),
                 ...(lowStockLevel !== undefined && {
                     lowStockLevel: Number(lowStockLevel)
                 }),
