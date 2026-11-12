@@ -10,7 +10,38 @@ const paymentMethods = {
     "CASH_ON_DELIVERY": "CASH_ON_DELIVERY"
 }
 
+const isNonEmptyString = (value) => {
+    return typeof value === "string" && value.trim().length > 0
+}
+
+const isOptionalString = (value) => {
+    return value === undefined ||
+        value === null ||
+        typeof value === "string"
+}
+
+const isValidEmail = (email) => {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
+}
+
+const isValidPhone = (phone) => {
+    return /^\+?[0-9][0-9\s()-]{5,18}$/.test(phone)
+}
+
+const isValidKenyanMpesaNumber = (phone) => {
+    const normalizedPhone = phone.replace(/[\s()-]/g, "")
+
+    return /^(?:\+254|254|0)[17]\d{8}$/.test(normalizedPhone)
+}
+
 export const createOrder = async (req, res) => {
+    const body = 
+        req.body &&
+        typeof req.body === "object" &&
+        !Array.isArray(req.body)
+            ? req.body
+            : {}
+
     const {
         customerName,
         customerEmail,
@@ -23,13 +54,13 @@ export const createOrder = async (req, res) => {
         paymentMethod,
         phoneNumber,
         items
-    } = req.body
+    } = body
 
     // 1. Validate customer information
     if (
-        !customerName?.trim() ||
-        !customerEmail?.trim() ||
-        !customerPhone?.trim()
+        !isNonEmptyString(customerName) ||
+        !isNonEmptyString(customerEmail) ||
+        !isNonEmptyString(customerPhone)
     ) {
         return res.status(400).json({
             success: false,
@@ -37,15 +68,46 @@ export const createOrder = async (req, res) => {
         })
     }
 
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customerEmail.trim())) {
+    // Validate email
+    if (!isValidEmail(customerEmail.trim())) {
         return res.status(400).json({
             success: false,
             message: "Please provide a valid email address"
         })
     }
 
+    // Validate customer phone no.
+    if (!isValidPhone(customerPhone.trim())) {
+        return res.status(400).json({
+            success: false,
+            message: "Please provide a valid customer phone number"
+        })
+    }
+
+    // Validate shipping info
+    if (
+        !isOptionalString(shippingAddress) ||
+        !isOptionalString(city) ||
+        !isOptionalString(county) ||
+        !isOptionalString(postalCode) ||
+        !isOptionalString(notes) ||
+        !isOptionalString(phoneNumber)
+    ) {
+        return res.status(400).json({
+            success: false,
+            message: "Shipping details and phone number must be strings"
+        })
+    }
+
     // 2. Validate payment method
-    const method = paymentMethods[paymentMethod]
+    if (!isNonEmptyString(paymentMethod)) {
+        return res.status(400).json({
+            success: false,
+            message: "Avalid payment method is required"
+        })
+    }
+
+    const method = paymentMethods[paymentMethod.trim()]
 
     if (!method) {
         return res.status(400).json({
@@ -54,14 +116,20 @@ export const createOrder = async (req, res) => {
         })
     }
 
-    if (method === "MPESA" && !phoneNumber?.trim()) {
-        return res.status(400).json({
-            success: false,
-            message: "M-Pesa phone number is required"
-        })
+    // Validate M-PESA number
+    if (method === "MPESA") {
+        if (
+            !isNonEmptyString(phoneNumber) ||
+            !isValidKenyanMpesaNumber(phoneNumber)
+        ) {
+            return res.status(400).json({
+                success: false,
+                message: "Please provide a valid Kenyan M-Pesa phoe number"
+            })
+        }
     }
 
-    // 3. Validate order items
+    // Validate order items
     if (!Array.isArray(items) || items.length === 0) {
         return res.status(400).json({
             success: false,
@@ -73,12 +141,22 @@ export const createOrder = async (req, res) => {
     const quantities = new Map()
 
     for (const item of items) {
+        if (
+            !item ||
+            typeof item !== "object" ||
+            Array.isArray(item)
+        ) {
+            return res.status(400).json({
+                success: false,
+                message: "Each order item must be a valid object"
+            })
+        }
+
         const productId = item.productId
         const quantity = Number(item.quantity)
 
         if (
-            typeof productId !== "string" ||
-            !productId.trim() ||
+            !isNonEmptyString(productId) ||
             !Number.isSafeInteger(quantity) ||
             quantity <= 0
         ) {
@@ -88,8 +166,10 @@ export const createOrder = async (req, res) => {
             })
         }
 
+        const normalizedProductId = productId.trim()
+
         const newQuantity =
-            (quantities.get(productId) || 0) + quantity
+            (quantities.get(normalizedProductId) || 0) + quantity
 
         if (!Number.isSafeInteger(newQuantity)) {
             return res.status(400).json({
@@ -98,7 +178,7 @@ export const createOrder = async (req, res) => {
             })
         }
 
-        quantities.set(productId, newQuantity)
+        quantities.set(normalizedProductId, newQuantity)
     }
 
     const orderItems = Array.from(
@@ -157,14 +237,48 @@ export const createOrder = async (req, res) => {
                             throw error
                         }
 
+                        // Validate database product price
+                        const productPrice = Number(product.price)
+
+                        if (
+                            !Number.isFinite(productPrice) ||
+                            productPrice < 0
+                        ) {
+                            const error = new Error("Invalid product price")
+                            error.statusCode = 500
+                            throw error
+                        }
+
                         const priceCents = Math.round(
-                            Number(product.price) * 100
+                            (product.price) * 100
                         )
+
+                        if (!Number.isSafeInteger(priceCents)) {
+                            const error = new Error("Product price exceeds supported limits")
+                            error.statusCode = 500
+                            throw error
+                        }
 
                         const itemSubtotalCents =
                             priceCents * item.quantity
 
-                        subtotalCents += itemSubtotalCents
+                        if(!Number.isSafeInteger(itemSubtotalCents)) {
+                            const error = new Error("Order item total exceeds supported limits")
+                            error.statusCode = 400
+                            throw error
+                        }
+
+                        //subtotalCents += itemSubtotalCents
+
+                        const newSubtotalCents = subtotalCents + itemSubtotalCents
+
+                        if (!Number.isSafeInteger(newSubtotalCents)) {
+                            const error = new Error("Order subtotal exceeds supported limits")
+                            error.statusCode = 400
+                            throw error
+                        }
+
+                        subtotalCents = newSubtotalCents
 
                         return {
                             ...item,
@@ -179,6 +293,12 @@ export const createOrder = async (req, res) => {
 
                     const totalCents =
                         subtotalCents + shippingCents
+
+                    if (!Number.isSafeInteger(totalCents)) {
+                        const error = new Error("Order total exceeds supported limits")
+                        error.statusCode = 400
+                        throw error
+                    }
 
                     // Generate a unique order number
                     const orderNumber =
@@ -307,9 +427,11 @@ export const createOrder = async (req, res) => {
 
             console.error("Create order error:", error)
 
-            return res.status(error.statusCode || 500).json({
+            const statusCode = error.statusCode || 500
+
+            return res.status(statusCode).json({
                 success: false,
-                message: error.statusCode
+                message: statusCode
                     ? error.message
                     : "Unable to create order"
             })
@@ -475,7 +597,28 @@ const runSerializableTransaction = async (callback) => {
 export const updateOrderStatus = async (req, res) => {
     try {
         const { id } = req.params
-        const { status } = req.body
+        const body = 
+            req.body &&
+            typeof req.body === "object" &&
+            !Array.isArray(req.body)
+                ? req.body
+                : {}
+        const { status } = body
+
+        if(!isNonEmptyString(id)) {
+            return res.status(400).json({
+                success: false,
+                message: "A valid order ID is required"
+            })
+        }
+
+        if (typeof status !== "string") {
+            return res.status(400).json({
+                success: false,
+                message: "A valid order status is required"
+            })
+        }
+
 
         if (!Object.prototype.hasOwnProperty.call(
             allowedOrderTranisiions,
@@ -543,6 +686,13 @@ export const updateOrderStatus = async (req, res) => {
 export const cancelOrder = async (req, res) => {
     try {
         const { id } = req.params
+
+        if (!isNonEmptyString(id)) {
+            return res.status(400).json({
+                success: false,
+                message: "A valid ID is required"
+            })
+        }
 
         const result = await runSerializableTransaction(
             async (tx) => {
