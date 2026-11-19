@@ -1,5 +1,4 @@
 import "dotenv/config"
-//import bcrypt from "bcryptjs"
 import prisma from "../src/config/db.js"
 import process from "node:process"
 

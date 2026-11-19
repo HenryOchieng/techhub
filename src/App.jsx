@@ -1,6 +1,8 @@
 import { useEffect } from "react"
 import { Routes, Route } from "react-router-dom";
 import useProductStore from "./store/productStore"
+import useAuthStore from "./store/authStore";
+import ProtectedRoute from "./components/auth/ProtectedRoute";
 
 import CustomerLayout from "./components/layout/CustomerLayout"
 
@@ -18,6 +20,8 @@ import Orders from "./pages/Orders"
 import OrderDetails from "./pages/OrderDetails"
 import Wishlist from "./pages/Wishlist";
 import Account from "./pages/Account"
+import Login from "./pages/Login"
+import Register from "./pages/Register"
 
 import AdminLayout from "./components/admin/AdminLayout"
 import AdminDashBoard from "./pages/admin/AdminDashboard";
@@ -34,6 +38,14 @@ function App() {
     fetchProducts()
   }, [fetchProducts])
 
+  const fetchCurrentUser = useAuthStore(
+    (state) => state.fetchCurrentUser
+  )
+
+  useEffect(() => {
+    fetchCurrentUser()
+  }, [fetchCurrentUser])
+
   return (
     <Routes>
 
@@ -45,26 +57,33 @@ function App() {
           <Route path="/deals" element={<Deals />}/>
           <Route path="/about" element={<About />}/>
           <Route path="/contact" element={<Contact />}/>
-
           <Route path="/product/:id" element={<ProductDetails />}/>
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
 
-          <Route path="/checkout" element={<Checkout />}/>
-          <Route path="/payment" element={<Payment />}/>
-          <Route path="/order-success" element={<OrderSuccess />}/>
-          <Route path="/orders" element={<Orders />}/>
-          <Route path="/order/:orderNumber" element={<OrderDetails />}/>
           <Route path="/wishlist" element={<Wishlist />}/>
-          <Route path="/account" element={<Account />}/>
+
+          {/* Protected customer pages */}
+          <Route element={<ProtectedRoute allowedRoles={["CUSTOMER"]} />}>
+            <Route path="/checkout" element={<Checkout />}/>
+            <Route path="/payment" element={<Payment />}/>
+            <Route path="/order-success" element={<OrderSuccess />}/>
+            <Route path="/orders" element={<Orders />}/>
+            <Route path="/order/:orderNumber" element={<OrderDetails />}/>
+            <Route path="/account" element={<Account />}/>
+          </Route>
         </Route>
 
-        {/* Admin Side */}
-        <Route path="/admin" element={<AdminLayout />}>
-          <Route index element={<AdminDashBoard />}/>
-          <Route path="orders" element={<AdminOrders />}/>
-          <Route path="products" element={<AdminProducts />}/>
-          <Route path="customers" element={<AdminCustomers />}/>
-          <Route path="categories" element={<AdminCategories />}/>
-          <Route path="/admin/inventory-history" element={<AdminInventoryHistory />} />
+        {/* Protected admin pages */}
+        <Route element={<ProtectedRoute allowedRoles={["ADMIN"]} />}>
+          <Route path="/admin" element={<AdminLayout />}>
+            <Route index element={<AdminDashBoard />}/>
+            <Route path="orders" element={<AdminOrders />}/>
+            <Route path="products" element={<AdminProducts />}/>
+            <Route path="customers" element={<AdminCustomers />}/>
+            <Route path="categories" element={<AdminCategories />}/>
+            <Route path="inventory-history" element={<AdminInventoryHistory />} />
+          </Route>
         </Route>
     </Routes>
   )
