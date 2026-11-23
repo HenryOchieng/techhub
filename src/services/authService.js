@@ -15,6 +15,11 @@ const authService = {
         const response = await api.get("/auth/me")
         return response.data
     },
+
+    getCustomers: async () => {
+        const response = await api.get("/auth/customers")
+        return response.data
+    }
 }
 
 export default authService

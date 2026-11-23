@@ -49,7 +49,7 @@ function ProtectedRoute({ allowedRoles }) {
     }
 
     //Enforce role-based access.
-    if (!allowedRoles && !allowedRoles.includes(user.role)) {
+    if (allowedRoles && !allowedRoles.includes(user.role)) {
         const redirectPath =
             user.role === "ADMIN" ? "/admin" : "/account"
 

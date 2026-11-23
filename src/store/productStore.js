@@ -2,6 +2,7 @@ import { create } from "zustand"
 import { persist } from "zustand/middleware"
 import productService from "../services/productService"
 import categoryService from "../services/categoryService"
+import inventoryService from "../services/inventoryService"
 
 import eliteBook from "../assets/products/hp/elitebook.jpg"
 import eliteBookBack from "../assets/products/hp/elitebook-back.jpg"
@@ -235,57 +236,43 @@ const useProductStore = create(
 
             inventoryHistory: [],
 
-            restockProduct: (productId, quantity, details = {}) => {
+            restockProduct: async (productId, quantity, details = {}) => {
                 const amount = Number(quantity)
 
                 if (!Number.isInteger(amount) || amount <= 0) {
                     return false
                 }
 
-                let success = false
-
-                set((state) => {
-                    const product = state.products.find(
-                        (item) => String(item.id) === String(productId)
+                try {
+                    set({ isLoading: true, error: null })
+                    const response = await inventoryService.restockProduct(
+                        productId,
+                        { quantity: amount, ...details }
                     )
 
-                    if (!product || !Number.isFinite(Number(product.stock))) {
-                        return state
-                    }
-
-                    const stockBefore = Number(product.stock)
-                    const stockAfter = stockBefore + amount
-
-                    success = true
-
-                    const movement = {
-                        id: crypto.randomUUID(),
-                        productId: product.id,
-                        productName: product.name,
-                        type: "Restock",
-                        quantity: amount,
-                        stockBefore,
-                        stockAfter,
-                        date: new Date().toISOString(),
-                        supplier: details.supplier?.trim() || "",
-                        reference: details.reference?.trim() || "",
-                        notes: details.notes?.trim() || "", 
-                    }
-
-                    return {
-                        products: state.products.map((item) =>
-                            String(item.id) === String(productId)
-                                ? {...item, stock: stockAfter}
-                                : item
+                    set((state) => ({
+                        products: state.products.map((product) =>
+                            String(product.id) === String(productId)
+                                ? { ...product, stock: response.product.stock }
+                                : product
                         ),
                         inventoryHistory: [
-                            movement,
+                            response.movement,
                             ...(state.inventoryHistory ?? []),
                         ],
-                    }
-                })
+                        isLoading: false,
+                        error: null,
+                    }))
 
-                return success
+                    return true
+                } catch (error) {
+                    console.error("Failed to restock product:", error)
+                    set({
+                        isLoading: false,
+                        error: error.response?.data?.message || error.message,
+                    })
+                    throw error
+                }
             },
 
             recordSale: (orderId, items) => {
@@ -467,7 +454,7 @@ const useProductStore = create(
                 return success
             },
 
-            adjustStock: (productId, quantity, direction, details = {}) => {
+            adjustStock: async (productId, quantity, direction, details = {}) => {
                 const amount = Number(quantity)
 
                 if (
@@ -478,58 +465,41 @@ const useProductStore = create(
                     return false
                 }
 
-                let success = false
-
-                set((state) => {
-                    const product = state.products.find(
-                        (item) => String(item.id) === String(productId)
+                try {
+                    set({ isLoading: true, error: null })
+                    const response = await inventoryService.adjustStock(
+                        productId,
+                        {
+                            quantity: amount,
+                            adjustment: direction.toUpperCase(),
+                            notes: details.reason,
+                            reference: details.reference,
+                        }
                     )
 
-                    if (!product || !Number.isFinite(Number(product.stock))) {
-                        return state
-                    }
+                    set((state) => ({
+                        products: state.products.map((product) =>
+                            String(product.id) === String(productId)
+                                ? { ...product, stock: response.product.stock }
+                                : product
+                        ),
+                        inventoryHistory: [
+                            response.movement,
+                            ...(state.inventoryHistory ?? []),
+                        ],
+                        isLoading: false,
+                        error: null,
+                    }))
 
-                    const stockBefore = Number(product.stock)
-
-                    if (direction === "decrease" && stockBefore < amount) {
-                        return state
-                    }
-
-                    const stockAfter =
-                        direction === "increase"
-                            ? stockBefore + amount
-                            : stockBefore - amount
-
-                        const movement = {
-                            id: crypto.randomUUID(),
-                            productId: product.id,
-                            productName: product.name,
-                            type: "Adjustment",
-                            adjustmentType: direction,
-                            quantity: amount,
-                            stockBefore,
-                            stockAfter,
-                            date: new Date().toISOString(),
-                            reason: details.reason?.trim() || "",
-                            reference: details.reference?.trim() || "",
-                        }
-
-                        success = true
-
-                        return {
-                            products: state.products.map((item) =>
-                                String(item.id) === String(productId)
-                                    ? {...item, stock:stockAfter}
-                                    : item
-                            ),
-                            inventoryHistory: [
-                                movement,
-                                ...(state.inventoryHistory ?? []),
-                            ],
-                        }
-                })
-
-                return success
+                    return true
+                } catch (error) {
+                    console.error("Failed to adjust product stock:", error)
+                    set({
+                        isLoading: false,
+                        error: error.response?.data?.message || error.message,
+                    })
+                    throw error
+                }
             },
 
             addProduct: async (product) => {
@@ -581,7 +551,7 @@ const useProductStore = create(
                     }
 
                     set((state) => ({
-                        product: [newProduct, ...state.products],
+                        products: [newProduct, ...state.products],
                         isLoading: false,
                         error: null
                     }))

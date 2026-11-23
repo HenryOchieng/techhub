@@ -59,6 +59,7 @@ export const createProduct = async (req, res) => {
             brand,
             price,
             oldPrice,
+            stock,
             lowStockLevel,
             image,
             images,
@@ -102,7 +103,14 @@ export const createProduct = async (req, res) => {
             })
         }
 
-        const productStock = 0
+        const productStock = stock ?? 0
+
+        if (!isValidNonNegativeInteger(productStock)) {
+            return res.status(400).json({
+                success: false,
+                message: "Stock must be a non-negative integer"
+            })
+        }
 
         const productLowStockLevel = lowStockLevel ?? 5
 

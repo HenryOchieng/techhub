@@ -138,7 +138,7 @@ const useAuthStore = create((set, get) => ({
             set({
                 isLoading: false,
                 isAuthReady: true,
-                authChechError: "Unable to verify your session. Please try again.",
+                authCheckError: "Unable to verify your session. Please try again.",
             })
 
             return false

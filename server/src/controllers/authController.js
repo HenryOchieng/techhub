@@ -318,3 +318,71 @@ export const getCurrentUser = async (req, res) => {
         })
     }
 }
+
+export const getCustomers = async (req, res) => {
+    try {
+        const customers = await prisma.user.findMany({
+            where: {
+                role: "CUSTOMER"
+            },
+            select: {
+                id: true,
+                name: true,
+                email: true,
+                phone: true,
+                createdAt: true,
+
+                orders: {
+                    select: {
+                        payment: {
+                            select: {
+                                status: true,
+                                amount: true
+                            }
+                        }
+                    }
+                }
+            },
+            orderBy: {
+                createdAt: "desc"
+            }
+        })
+
+        const formattedCustomers = customers.map((customer) => {
+            const paidOrders = customer.orders.filter(
+                (order) => order.payment?.status === "PAID"
+            )
+
+            const totalSpent =  paidOrders.reduce(
+                (total, order) => {
+                    return total + Number(order.payment.amount)
+                },
+                0
+            )
+
+            return {
+                id: customer.id,
+                name: customer.name,
+                email: customer.email,
+                phone: customer.phone || "",
+                registered: customer.createdAt,
+                orders: customer.orders.length,
+                spent: totalSpent,
+                status: "Active"
+            }
+        })
+
+        return res.status(200).json({
+            success: true,
+            count: formattedCustomers.length,
+            customers: formattedCustomers
+        })
+    } catch (error) {
+        console.error("Get customers error:", error)
+
+        return res.status(500).json({
+            success: false,
+            message: "Unable to retrieve customers"
+        })
+    }
+}

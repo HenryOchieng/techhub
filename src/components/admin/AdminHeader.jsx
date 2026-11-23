@@ -4,8 +4,20 @@ import {
     FiLogOut,
     FiMenu
 } from "react-icons/fi"
+import { useNavigate } from "react-router-dom"
+import { toast } from "react-hot-toast"
+import useAuthStore from "../../store/authStore"
 
 function AdminHeader({ onMenuClick }) {
+    const navigate = useNavigate()
+    const user = useAuthStore((state) => state.user)
+    const logout = useAuthStore((state) => state.logout)
+
+    const handleLogout = () => {
+        logout()
+        toast.success("You have been signed out successfully.")
+        navigate("login/", { replace: true })
+    }
     return (
         <header className="h-20 bg-white border-b border-slate-200 px-5 lg:px-8 flex items-center justify-between">
 
@@ -52,7 +64,7 @@ function AdminHeader({ onMenuClick }) {
                     </div>
                     <div className="hidden sm:block">
                         <p className="text-sm font-semibold text-slate-900">
-                            Admin
+                            {user?.name || "Admin"}
                         </p>
                         <p className="text-xs text-slate-500">
                             Administrator
@@ -62,8 +74,10 @@ function AdminHeader({ onMenuClick }) {
 
                 {/* Logout */}
                 <button
+                onClick={handleLogout}
                     className="w-10 h-10 rounded-xl flex items-center justify-center text-slate-500 hover:bg-red-50 hover:text-red-600 transition"
                     arial-label="Logout"
+                    title="Logout"
                 >
                     <FiLogOut className="text-xl" />
                 </button>

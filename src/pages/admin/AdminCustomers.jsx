@@ -1,78 +1,73 @@
-import { useState } from "react"
+import { useCallback, useEffect, useState } from "react"
 import {
-    FiSearch,
     FiEye,
-    FiX,
     FiMail,
     FiPhone,
-    FiShoppingBag
+    FiSearch,
+    FiShoppingBag,
+    FiX
 } from "react-icons/fi"
+import authService from "../../services/authService"
 
 function AdminCustomers() {
-
-    const [customers] = useState([
-        {
-            id: 1,
-            name: "John Doe",
-            email: "john@example.com",
-            phone: "+254 712 345 678",
-            registered: "10 Sep 2026",
-            orders: 5,
-            spent: 245000,
-            status: "Active"
-        },
-        {
-            id: 2,
-            name: "Jane Smith",
-            email: "jane@example.com",
-            phone: "+254 723 456 789",
-            registered: "05 Sep 2026",
-            orders: 3,
-            spent: 145000,
-            status: "Active"
-        },
-        {
-            id: 3,
-            name: "Peter Otieno",
-            email: "peter@example.com",
-            phone: "+254 734 567 890",
-            registered: "28 Aug 2026",
-            orders: 1,
-            spent: 32000,
-            status: "Active"
-        },
-        {
-            id: 4,
-            name: "Mary Achieng",
-            email: "mary@example.com",
-            phone: "+254 745 678 901",
-            registered: "15 Aug 2026",
-            orders: 7,
-            spent: 385000,
-            status: "Active"
-        },
-        {
-            id: 5,
-            name: "David Ochieng",
-            email: "david@example.com",
-            phone: "+254 756 789 012",
-            registered: "02 Aug 2026",
-            orders: 0,
-            spent: 0,
-            status: "Inactive"
-        }
-    ])
+    const [customers, setCustomers] = useState([])
+    const [isLoading, setIsLoading] = useState(true)
+    const [error, setError] = useState("")
 
     const [search, setSearch] = useState("")
     const [statusFilter, setStatusFilter] = useState("All")
     const [selectedCustomer, setSelectedCustomer] = useState(null)
 
+    const fetchCustomers = useCallback(async ({ showLoading = false } = {}) => {
+        if (showLoading) {
+            setIsLoading(true)
+            setError("")
+        }
+
+        try {
+            const response = await authService.getCustomers()
+
+            const formattedCustomers = (response.customers || []).map((customer) => ({
+                ...customer,
+                registered: customer.registered
+                    ? new Date(customer.registered).toLocaleDateString("en-GB", {
+                        day: "2-digit",
+                        month: "short",
+                        year: "numeric"
+                    })
+                    : "N/A"
+            }))
+
+            setCustomers(formattedCustomers)
+        } catch (fetchError) {
+            console.error("Failed to fetch customers:", fetchError)
+
+            setError(
+                fetchError.response?.data?.message ||
+                "Unable to load customers. Please try again."
+            )
+        } finally {
+            setIsLoading(false)
+        }
+    }, [])
+
+    useEffect(() => {
+        const timeoutId = window.setTimeout(() => {
+            void fetchCustomers()
+        }, 0)
+
+        return () => {
+            window.clearTimeout(timeoutId)
+        }
+    }, [fetchCustomers])
+
     const filteredCustomers = customers.filter((customer) => {
+        const query = search.toLowerCase()
 
         const matchesSearch =
-            customer.name.toLowerCase().includes(search.toLowerCase()) ||
-            customer.email.toLowerCase().includes(search.toLowerCase()) ||
-            customer.phone.includes(search)
+            (customer.name || "").toLowerCase().includes(query) ||
+            (customer.email || "").toLowerCase().includes(query) ||
+            (customer.phone || "").includes(search)
 
         const matchesStatus =
             statusFilter === "All" ||
@@ -125,10 +120,28 @@ function AdminCustomers() {
                         <option value="Active">Active</option>
                         <option value="Inactive">Inactive</option>
                     </select>
-
                 </div>
-
             </div>
+
+            {isLoading && (
+                <div className="bg-white border border-slate-200 rounded-2xl p-8 text-center text-slate-500 mb-6">
+                    Loading Customers...
+                </div>
+            )}
+
+            {error && (
+                <div className="bg-red-50 border border-red-200 rounded-2xl p-5 mb-6">
+                    <p className="text-red-700 mb-3">{error}</p>
+                    <button
+                        onClick={() => {
+                            void fetchCustomers({ showLoading: true })
+                        }}
+                        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+                    >
+                        Try Again
+                    </button>
+                </div>
+            )}
 
             {/* Customers Table */}
             <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden">
@@ -209,7 +222,7 @@ function AdminCustomers() {
                                     </td>
 
                                     <td className="px-6 py-5 text-sm font-semibold text-slate-900">
-                                        Kshs. {customer.spent.toLocaleString()}
+                                        Kshs. {(customer.spent ?? 0).toLocaleString()}
                                     </td>
 
                                     <td className="px-6 py-5">
@@ -249,7 +262,7 @@ function AdminCustomers() {
                 </div>
 
                 {/* Empty State */}
-                {filteredCustomers.length === 0 && (
+                {!isLoading && !error &&  filteredCustomers.length === 0 && (
                     <div className="py-12 text-center text-slate-500">
                         No customers found.
                     </div>
@@ -366,7 +379,7 @@ function AdminCustomers() {
                                 </p>
 
                                 <p className="text-2xl font-bold text-slate-900 mt-1">
-                                    Kshs. {selectedCustomer.spent.toLocaleString()}
+                                    Kshs. {(selectedCustomer.spent ?? 0).toLocaleString()}
                                 </p>
 
                             </div>

@@ -21,10 +21,12 @@ function Login() {
         const result = await login({ email, password })
 
         if (result.success) {
-            const destination = 
-                result.user.role === "ADMIN"
-                    ? "/admin"
-                    : location.state?.from?.pathname || "/account"
+            const requestedPath = location.state?.from?.pathname
+            const destination = result.user.role === "ADMIN"
+                ? "/admin"
+                : requestedPath?.startsWith("/admin")
+                    ? "/account"
+                    : requestedPath || "/account"
 
             navigate(destination, { replace: true})
         }

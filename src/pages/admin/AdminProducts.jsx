@@ -118,7 +118,7 @@ function AdminProducts() {
         (state) => state.adjustStock
     )
 
-    const handleRestock = (e) => {
+    const handleRestock = async (e) => {
         e.preventDefault()
 
         const quantity = Number(restockQuantity)
@@ -127,20 +127,28 @@ function AdminProducts() {
             return
         }
 
-        const success = restockProduct(
-            restockingProduct.id,
-            quantity
-        )
+        try {
+            const success = await restockProduct(
+                restockingProduct.id,
+                quantity
+            )
 
-        if (!success) {
-            return
+            if (!success) {
+                return
+            }
+
+            setRestockingProduct(null)
+            setRestockQuantity(1)
+        } catch (error) {
+            alert(
+                error.response?.data?.message ||
+                error.message ||
+                "Unable to restock product."
+            )
         }
-
-        setRestockingProduct(null)
-        setRestockQuantity(1)
     }
 
-    const handleStockAdjustment = (e) => {
+    const handleStockAdjustment = async (e) => {
         e.preventDefault()
 
         const quantity = Number(adjustmentQuantity)
@@ -154,26 +162,34 @@ function AdminProducts() {
             return
         }
 
-        const success = adjustStock(
-            adjustingProduct.id,
-            quantity,
-            adjustmentDirection,
-            {
-                reason: adjustmentReason,
-                reference: adjustmentReference,
+        try {
+            const success = await adjustStock(
+                adjustingProduct.id,
+                quantity,
+                adjustmentDirection,
+                {
+                    reason: adjustmentReason,
+                    reference: adjustmentReference,
+                }
+            )
+
+            if (!success) {
+                alert("Unable to adjust stock. Check the quantity and current stock level.")
+                return
             }
-        )
 
-        if (!success) {
-            alert("Unable to adjust stock. Check the quantity and current stock level.")
-            return
+            setAdjustingProduct(null)
+            setAdjustmentQuantity(1)
+            setAdjustmentDirection("decrease")
+            setAdjustmentReason("Physical stock count")
+            setAdjustmentReference("")
+        } catch (error) {
+            alert(
+                error.response?.data?.message ||
+                error.message ||
+                "Unable to adjust stock."
+            )
         }
-
-        setAdjustingProduct(null)
-        setAdjustmentQuantity(1)
-        setAdjustmentDirection("decrease")
-        setAdjustmentReason("Physical stock count")
-        setAdjustmentReference("")
     }
 
     return (
@@ -853,7 +869,8 @@ function AdminProducts() {
                             onSubmit={async (e) => {
                                 e.preventDefault()
 
-                                const formData = new FormData(e.currentTarget)
+                                const form = e.currentTarget
+                                const formData = new FormData(form)
 
                                 const newProduct = {
                                     name: formData.get("name").trim(),
@@ -873,7 +890,7 @@ function AdminProducts() {
                                     await addProduct(newProduct)
 
                                     setAddingProduct(false)
-                                    e.currentTarget.reset()
+                                    form.reset()
                                 } catch (error) {
                                     setProductError(
                                         error.response?.data?.message ||

@@ -1,6 +1,22 @@
 import api from "./api"
 
 const inventoryService = {
+    restockProduct: async (productId, details) => {
+        const response = await api.post(
+            `/products/${productId}/restock`,
+            details
+        )
+        return response.data
+    },
+
+    adjustStock: async (productId, details) => {
+        const response = await api.post(
+            `/products/${productId}/adjust-stock`,
+            details
+        )
+        return response.data
+    },
+
     getInventoryHistory: async (params = {}) => {
         const response = await api.get("/inventory/history", { params })
         return response.data

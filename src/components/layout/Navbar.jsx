@@ -5,19 +5,29 @@ import {
     FiMenu,
     FiX,
     FiSearch,
-    FiUser
+    FiUser,
+    FiGrid,
+    FiLogOut
  } from "react-icons/fi"
 import { useState } from "react"
+import { toast } from "react-hot-toast"
 import useCartStore from "../../store/cartStore"
 import useWishlistStore from "../../store/wishlistStore"
 import useUIStore from "../../store/uiStore"
+import useAuthStore from "../../store/authStore";
 
  function Navbar() {
     const [menuOpen, setMenuOpen] = useState(false)
 
     const location = useLocation()
-
     const navigate = useNavigate()
+
+    const user = useAuthStore((state) => state.user)
+    const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
+    const logout = useAuthStore((state) => state.logout)
+
+    const isAdmin = user?.role === "ADMIN"
+    const accountPath = isAdmin ? "/admin" : "/account"
 
     const navLinks = [
         { name: "Home", path: "/" },
@@ -52,6 +62,18 @@ import useUIStore from "../../store/uiStore"
     const goToWishlist = () => {
         closeMobileMenu()
         navigate("/wishlist")
+    }
+
+    const goToAccount = () => {
+        closeMobileMenu()
+        navigate(accountPath)
+    }
+
+    const handleLogout = () => {
+        closeMobileMenu()
+        logout()
+        toast.success("You have been signed out successfully.")
+        navigate("/login", { replace: true })
     }
 
     return (
@@ -130,21 +152,51 @@ import useUIStore from "../../store/uiStore"
                             )}
                         </button>
 
-                        {/* Account */}
-                        <button
-                            onClick={() => navigate("/account")}
-                            arial-label="Account"
-                            className="text-white hover:text-cyan-400 transition"
-                        >
-                            <FiUser className="text-xl" />
-                        </button>
+                        {isAuthenticated && user ? (
+                            <>
+                                <button
+                                    onClick={goToAccount}
+                                    aria-label={isAdmin ? "Admin dashboard" : "My account"}
+                                    className="flex items-center gap-2 text-white hover:text-cyan-400 tranisition"
+                                >
+                                    {isAdmin ? <FiGrid /> : <FiUser />}
+                                    <span className="max-w-28 truncate text-sm">
+                                        {user.name}
+                                    </span>
+                                </button>
+                                <button
+                                    onClick={handleLogout}
+                                    aria-label="Sign out"
+                                    title="Sign out"
+                                    className="text-white hover:text-red-400 transition"
+                                >
+                                    <FiLogOut className="text-xl" />
+                                </button>
+                            </>
+                        ):(
+                            <div className="flex items-center gap-3">
+                                <Link
+                                    to="/login"
+                                    className="text-white hover:text-cyan-400 transition text-sm font-medium"
+                                >
+                                    Sign In
+                                </Link>
+                                <Link
+                                    to="/register"
+                                    className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-semibold transition"
+                                >
+                                    Register
+                                </Link>
+                            </div>
+                        )}
                     </div>
 
                     {/* Mobile Menu */}
                     <button
                         className="lg:hidden text-white text-3xl"
                         onClick={() => setMenuOpen(!menuOpen)}
-                        arial-label="Toggle Menu"
+                        arial-label="Toggle menu"
+                        aria-expanded={menuOpen}
                     >
                         {menuOpen ? <FiX /> : <FiMenu />}
                     </button>
@@ -226,20 +278,47 @@ import useUIStore from "../../store/uiStore"
                                 </span>
                             </button>
                         </div>
-
-                        {/* Account */}
-                        <button
-                            onClick={() => {
-                                closeMobileMenu()
-                                navigate("/account")
-                            }}
-                            className="w-full mt-3 flex items-center justify-center gap-2 py-3 rounded-lg bg-slate-800 text-white hover:text-cyan-400 transition"
-                        >
-                            <FiUser />
-                            <span className="text-sm">
-                                My Account
-                            </span>
-                        </button>
+                        
+                        {/* Mobile Authentication */}
+                        {isAuthenticated && user ? (
+                            <div className="mt-4 space-y-3">
+                                <button
+                                    onClick={goToAccount}
+                                    className="w-full flex items-center justify-center gap-2 py-3 rounded-lg bg-slate-800 text-white hover:text-cyan-400 transition"
+                                >
+                                    {isAdmin ? <FiGrid /> : <FiUser />}
+                                    <span className="text-sm">
+                                        {isAdmin ? "Admin Dashboard" : user.name}
+                                    </span>
+                                </button>
+                                <button
+                                    onClick={handleLogout}
+                                    className="w-full flex items-center justify-center gap-2 py-3 rounded-lg bg-red-600 hover:bg-red-700 text-white transition"
+                                >
+                                    <FiLogOut />
+                                    <span className="text-sm">
+                                        Sign Out
+                                    </span>
+                                </button>
+                            </div>
+                        ):(
+                            <div className="mt-4 grid grid-cols-2 gap-3">
+                                <Link
+                                    to="/login"
+                                    onClick={closeMobileMenu}
+                                    className="flex items-center justify-center py-3 rounded-lg bg-slate-800 text-white hover:text-cyan-400 trasition"
+                                >
+                                    Sign In
+                                </Link>
+                                <Link
+                                    to="/register"
+                                    onClick={closeMobileMenu}
+                                    className="flex items-center justify-center py-3 rounded-lg bg-blue-600 hover:bg-blue-700 text-white transition"
+                                >
+                                    Register
+                                </Link>
+                            </div>
+                        )}
                     </div>
                 </div>
             )}
